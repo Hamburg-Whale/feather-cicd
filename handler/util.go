@@ -1,7 +1,8 @@
-package network
+package handler
 
 import (
 	"feather/types"
+
 	"github.com/gin-gonic/gin"
 )
 

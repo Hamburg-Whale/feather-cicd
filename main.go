@@ -2,7 +2,7 @@ package main
 
 import (
 	"feather/config"
-	"feather/network"
+	"feather/handler"
 	"feather/service"
 	"flag"
 )
@@ -14,7 +14,7 @@ func main() {
 	flag.Parse()
 
 	config.NewConfig(*pathFlag)
-	n := network.NewServer(service.NewService(), *port)
+	n := handler.NewServer(service.NewService(), *port)
 	if err := n.StartServer(); err != nil {
 		panic(err)
 	}

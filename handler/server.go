@@ -1,10 +1,11 @@
-package network
+package handler
 
 import (
 	"feather/service"
+	"log"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"log"
 )
 
 type Server struct {
