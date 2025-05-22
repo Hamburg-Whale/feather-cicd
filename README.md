@@ -1,32 +1,99 @@
-Programming Language : Go, JavaScript
-Framework : Gin, React
-IDE : Cursor, Goland
-Dev Env : Kubernetes, Docker, Gitea, Argo Workflows, ArgoCD, Dive
-Service Mesh : Istio
-Observability : OpenTelemetry, Loki, Prometheus, Tempo, Kiali
-AI : ChatGPT
-# Summary
-## Feather CI/CD Auto-Registration
-### Seamlessly connect your GitHub repositories with Argo Workflows and ArgoCD for automated deployments
-# Introduction
-![build](https://github.com/user-attachments/assets/ce2e1094-c89e-4c49-8a1c-1c16741dedee)
-## Create Repository using a Template
-## Gitea
-Gitea API : Create a repository using a template
-https://docs.gitea.com/en-us/api-reference/repository/generate-repo
-### Gitea API : GenerateRepoOption
+# 🚀 Feather CI/CD Auto-Registration
 
-| avatar           | boolean<br><br>include avatar of the template repo                       |
-| ---------------- | ------------------------------------------------------------------------ |
-| default_branch   | string<br><br>Default branch of the new repository                       |
-| description      | string<br><br>Description of the repository to create                    |
-| git_content      | boolean<br><br>include git content of default branch in template repo    |
-| git_hooks        | boolean<br><br>include git hooks in template repo                        |
-| labels           | boolean<br><br>include labels in template repo                           |
-| name*            | string  <br><br>Name of the repository to create                         |
-| owner*           | string<br><br>The organization or person who will own the new repository |
-| private          | boolean<br><br>Whether the repository is private                         |
-| protected_branch | boolean<br><br>include protected branches in template repo               |
-| topics           | boolean<br><br>include topics in template repo                           |
-| webhooks         | boolean<br><br>include webhooks in template repo                         |
-### Argo Workflows
+> **Seamlessly connect your GitHub repositories with Argo Workflows and ArgoCD for automated deployments**
+
+![build](https://github.com/user-attachments/assets/ce2e1094-c89e-4c49-8a1c-1c16741dedee)
+
+---
+
+## 🌐 Environment
+
+| Category        | Tech Stack                                                                 |
+|----------------|------------------------------------------------------------------------------|
+| **Language**    | Go, JavaScript                                                              |
+| **Framework**   | Gin (Go), React (JS)                                                        |
+| **IDE**         | Cursor, GoLand                                                              |
+| **Dev Env**     | Kubernetes, Docker, Gitea, Argo Workflows, ArgoCD, Dive                    |
+| **Service Mesh**| Istio                                                                       |
+| **Observability**| OpenTelemetry, Loki, Prometheus, Tempo, Kiali                             |
+| **AI**          | ChatGPT                                                                     |
+
+---
+
+## 🧩 Summary
+
+Feather streamlines the CI/CD pipeline setup by **auto-registering repositories** created via Gitea templates into **Argo Workflows** and **ArgoCD**, enabling **hands-free, automated deployments** from the moment a project is scaffolded.
+
+---
+
+## 🛠️ Features
+
+- 🔨 **Create repositories from templates** via the Gitea API
+- ⚙️ **Auto-configure Argo Workflows** for CI pipelines
+- 🚀 **Auto-sync with ArgoCD** for GitOps-based CD
+- 🔍 **Fully observable** with Prometheus, Tempo, Loki, and Kiali
+
+---
+
+## 📦 Create Repository Using a Template
+
+Feather leverages the [Gitea GenerateRepo API](https://docs.gitea.com/en-us/api-reference/repository/generate-repo) to scaffold new repositories from templates with customizable options.
+
+### 📑 Gitea API: `GenerateRepoOption`
+
+| Field            | Type      | Description                                                                  |
+|------------------|-----------|------------------------------------------------------------------------------|
+| `name`*          | `string`  | Name of the repository to create                                             |
+| `owner`*         | `string`  | The organization or person who will own the new repository                  |
+| `description`    | `string`  | Description of the new repository                                            |
+| `default_branch` | `string`  | Default branch name                                                          |
+| `private`        | `boolean` | Whether the repository is private                                            |
+| `avatar`         | `boolean` | Include avatar of the template repo                                          |
+| `git_content`    | `boolean` | Include Git content of default branch in template repo                       |
+| `git_hooks`      | `boolean` | Include Git hooks from the template repo                                     |
+| `labels`         | `boolean` | Include issue labels from the template repo                                  |
+| `protected_branch`| `boolean`| Include protected branches from the template repo                            |
+| `topics`         | `boolean` | Include topic tags                                                           |
+| `webhooks`       | `boolean` | Include webhooks from the template repo                                      |
+
+---
+
+## ⚙️ Argo Workflows
+
+Feather registers newly created repositories to **Argo Workflows**, enabling CI pipelines to be executed automatically. This includes:
+
+- 🧪 Test automation
+- 🛠️ Build steps
+- ✅ Status reporting
+
+---
+
+## 🔁 ArgoCD
+
+Repositories are also linked with **ArgoCD**, providing:
+
+- 📦 Continuous Deployment through GitOps
+- 🔄 Automatic sync of application manifests
+- 🔒 Declarative security and rollback support
+
+---
+
+## 📸 Preview
+
+Coming soon...
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please open issues or submit PRs to improve Feather or its integrations.
+
+---
+
+## 📄 License
+
+[MIT License](./LICENSE)
+
+---
+
+*Made with ❤️ by developers for developers*
