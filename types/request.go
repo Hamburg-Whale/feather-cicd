@@ -36,7 +36,7 @@ GenerateRepoOption{
 */
 
 type CreateRepoReq struct {
-	WebhookFlag      bool             `json:"webhook_flag" binding:"required"`
+	WebhookFlag      bool             `json:"webhook_flag"`
 	Url              string           `json:"url" binding:"required"`
 	Token            string           `json:"token" binding:"required"`
 	TemplateOwner    string           `json:"template_owner" binding:"required"`

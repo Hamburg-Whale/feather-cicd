@@ -114,7 +114,7 @@ func doJSONPost(url, token string, payload interface{}) (*http.Response, error) 
 }
 
 func (service *Service) CreateRepo(req *types.CreateRepoReq) (*types.Response, error) {
-	repoURL := fmt.Sprintf("%s/repos/%s/%s/generate", req.Url, req.TemplateOwner, req.TemplateRepo)
+	repoURL := fmt.Sprintf("%s/api/v1/repos/%s/%s/generate", req.Url, req.TemplateOwner, req.TemplateRepo)
 
 	payload := map[string]interface{}{
 		"avatar":           req.Avatar,
@@ -153,7 +153,7 @@ func (service *Service) CreateRepo(req *types.CreateRepoReq) (*types.Response, e
 }
 
 func (service *Service) createWebhook(baseURL, token, owner, repo string, req *types.CreateWebhookReq) error {
-	hookURL := fmt.Sprintf("%s/repos/%s/%s/hooks", baseURL, owner, repo)
+	hookURL := fmt.Sprintf("%s/api/v1/repos/%s/%s/hooks", baseURL, owner, repo)
 
 	hookType := req.Type
 	if hookType == "" {
