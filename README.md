@@ -1,4 +1,3 @@
-# Environment
 Programming Language : Go, JavaScript
 Framework : Gin, React
 IDE : Cursor, Goland
@@ -10,7 +9,7 @@ AI : ChatGPT
 ## Feather CI/CD Auto-Registration
 ### Seamlessly connect your GitHub repositories with Argo Workflows and ArgoCD for automated deployments
 # Introduction
-
+![build](https://github.com/user-attachments/assets/ce2e1094-c89e-4c49-8a1c-1c16741dedee)
 ## Create Repository using a Template
 ## Gitea
 Gitea API : Create a repository using a template
