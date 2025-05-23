@@ -34,7 +34,9 @@ func (handler *handler) createRepo(ctx *gin.Context) {
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response(ctx, http.StatusUnprocessableEntity, err.Error())
-	} else if _, err := handler.server.service.CreateRepo(req); err != nil {
+	} else if res, err := handler.server.service.CreateRepo(req); err != nil {
 		response(ctx, http.StatusInternalServerError, err.Error())
+	} else {
+		response(ctx, http.StatusOK, res)
 	}
 }
