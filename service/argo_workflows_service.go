@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
+	"text/template"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
@@ -11,13 +13,59 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func CreateArgoWorkflowsJob(dockerRepo string, imageName string, tag string, jdk string, builder string, name string, url string, namespace string) error {
+func buildCommand(jdk, builder, url, dockerRepo, imageName, tag string) (string, error) {
+	data := struct {
+		JDK, Builder, URL, DockerRepo, ImageName, Tag string
+	}{
+		JDK:        jdk,
+		Builder:    builder,
+		URL:        url,
+		DockerRepo: dockerRepo,
+		ImageName:  imageName,
+		Tag:        tag,
+	}
+
+	tmpl, err := template.ParseFiles("build.tmpl")
+	if err != nil {
+		return "", fmt.Errorf("failed to parse template file: %w", err)
+	}
+
+	var buf strings.Builder
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
+	}
+	return buf.String(), nil
+}
+
+/*
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+
+	generateName: $name
+	namespace: $namespace
+
+spec:
+
+	entrypoint: build-and-push
+	templates:
+	- name: build-and-push
+		container:
+			image: docker:24.0.5-dind
+			command: ["sh", "-c"]
+			args: ~template~
+			securityContext:
+			  privileged: true
+*/
+func CreateArgoWorkflowsJobBasedSpringBoot(name, namespace, jdk, builder, url, dockerRepo, imageName, tag string) error {
 	config, err := GetKubeConfig()
 	if err != nil {
 		log.Fatalf("failed to load in-cluster config: %v", err)
 	}
 
 	wfClient := wfclientset.NewForConfigOrDie(config).ArgoprojV1alpha1().Workflows(namespace)
+
+	command, err := buildCommand(jdk, builder, url, dockerRepo, imageName, tag)
 
 	workflow := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
@@ -31,45 +79,12 @@ func CreateArgoWorkflowsJob(dockerRepo string, imageName string, tag string, jdk
 					Container: &corev1.Container{
 						Image:   "docker:24.0.5-dind",
 						Command: []string{"sh", "-c"},
-						Args: []string{fmt.Sprintf(`
-							apk add --no-cache git %s %s docker-cli &&
-							git clone %s.git app &&
-							cd app &&
-							./gradlew build &&
-							echo "$DOCKER_TOKEN" | docker login -u $DOCKER_USER --password-stdin &&
-							docker build -t %s/%s:%s . &&
-							docker push %s/%s:%s
-						`, jdk, builder, url, dockerRepo, imageName, tag, dockerRepo, imageName, tag)},
+						Args:    []string{command},
 						SecurityContext: &corev1.SecurityContext{
 							Privileged: boolPtr(true),
 						},
 					},
 				},
-
-				/**
-				apiVersion: argoproj.io/v1alpha1
-				kind: Workflow
-				metadata:
-				generateName: sdk-demo-
-				spec:
-				entrypoint: build-and-push
-				templates:
-					- name: build-and-push
-					  container:
-						image: docker:24.0.5-dind
-						command: ["sh", "-c"]
-						args:
-						- |
-							apk add --no-cache git openjdk17 gradle docker-cli &&
-							git clone https://github.com/example/springboot-app.git app &&
-							cd app &&
-							./gradlew build &&
-							echo "$DOCKER_TOKEN" | docker login -u $DOCKER_USER --password-stdin &&
-							docker build -t mydockeruser/springboot-app:v1 . &&
-							docker push mydockeruser/springboot-app:v1
-						securityContext:
-						privileged: true
-				**/
 			},
 		},
 	}
@@ -80,4 +95,8 @@ func CreateArgoWorkflowsJob(dockerRepo string, imageName string, tag string, jdk
 	}
 	fmt.Println("Workflow submitted:", result.Name)
 	return nil
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }

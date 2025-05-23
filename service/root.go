@@ -1,13 +1,9 @@
 package service
 
 import (
-	"bytes"
-	"encoding/json"
 	"feather/types"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 
 	"k8s.io/client-go/rest"
 )
@@ -86,39 +82,4 @@ func (service *Service) CreateUser(email string, password string) (*types.Respon
 
 func GetKubeConfig() (*rest.Config, error) {
 	return rest.InClusterConfig()
-}
-
-func boolPtr(b bool) *bool {
-	return &b
-}
-
-func doJSONPost(url, token string, payload interface{}) (*http.Response, error) {
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return nil, fmt.Errorf("JSON 직렬화 실패: %w", err)
-	}
-
-	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
-	if err != nil {
-		return nil, fmt.Errorf("요청 생성 실패: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	if token != "" {
-		req.Header.Set("Authorization", "token "+token)
-	}
-
-	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("요청 실패: %w", err)
-	}
-
-	if res.StatusCode >= 300 {
-		defer res.Body.Close()
-		bodyBytes, _ := io.ReadAll(res.Body)
-		return nil, fmt.Errorf("요청 실패: %s", string(bodyBytes))
-	}
-
-	return res, nil
 }
