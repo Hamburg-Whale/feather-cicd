@@ -39,7 +39,7 @@ func (service *Service) CreateRepo(req *types.CreateRepoReq) (*types.Response, e
 	}
 
 	if req.WebhookFlag {
-		err := service.createWebhook(req.Url, req.Token, req.Owner, req.Name, &req.CreateWebhookReq)
+		err := createWebhook(req.Url, req.Token, req.Owner, req.Name, &req.CreateWebhookReq)
 		if err != nil {
 			return nil, fmt.Errorf("웹훅 생성 실패: %w", err)
 		}
@@ -48,7 +48,7 @@ func (service *Service) CreateRepo(req *types.CreateRepoReq) (*types.Response, e
 	return &result, nil
 }
 
-func (service *Service) createWebhook(baseURL, token, owner, repo string, req *types.CreateWebhookReq) error {
+func createWebhook(baseURL, token, owner, repo string, req *types.CreateWebhookReq) error {
 	hookURL := fmt.Sprintf("%s/api/v1/repos/%s/%s/hooks", baseURL, owner, repo)
 
 	hookType := req.Type

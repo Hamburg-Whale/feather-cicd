@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"feather/types"
 	"fmt"
 	"log"
 	"strings"
@@ -13,19 +14,27 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func buildCommand(jdk, builder, url, dockerRepo, imageName, tag string) (string, error) {
+func CreateArgoWorkflowScript(req *types.CreateJobBasedJavaReq) (string, error) {
+	workflowScript, err := buildCommand(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to reate workflow script: %w", err)
+	}
+	return workflowScript, nil
+}
+
+func buildCommand(req *types.CreateJobBasedJavaReq) (string, error) {
 	data := struct {
-		JDK, Builder, URL, DockerRepo, ImageName, Tag string
+		JDK, BuildTool, URL, ImageRegistry, ImageName, ImageTag string
 	}{
-		JDK:        jdk,
-		Builder:    builder,
-		URL:        url,
-		DockerRepo: dockerRepo,
-		ImageName:  imageName,
-		Tag:        tag,
+		JDK:           req.Jdk,
+		BuildTool:     req.BuildTool,
+		URL:           req.Url,
+		ImageRegistry: req.ImageRegistry,
+		ImageName:     req.ImageName,
+		ImageTag:      req.ImageTag,
 	}
 
-	tmpl, err := template.ParseFiles("build.tmpl")
+	tmpl, err := template.ParseFiles("assets/templates/argo/ci.tmpl")
 	if err != nil {
 		return "", fmt.Errorf("failed to parse template file: %w", err)
 	}
@@ -57,19 +66,19 @@ spec:
 			securityContext:
 			  privileged: true
 */
-func CreateArgoWorkflowsJobBasedSpringBoot(name, namespace, jdk, builder, url, dockerRepo, imageName, tag string) error {
+func (service *Service) CreateArgoWorkflowsJobBasedSpringBoot(req *types.CreateJobBasedJavaReq) error {
 	config, err := GetKubeConfig()
 	if err != nil {
 		log.Fatalf("failed to load in-cluster config: %v", err)
 	}
 
-	wfClient := wfclientset.NewForConfigOrDie(config).ArgoprojV1alpha1().Workflows(namespace)
+	wfClient := wfclientset.NewForConfigOrDie(config).ArgoprojV1alpha1().Workflows(req.Namespace)
 
-	command, err := buildCommand(jdk, builder, url, dockerRepo, imageName, tag)
+	command, err := buildCommand(req)
 
 	workflow := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: name + "-",
+			GenerateName: req.Name + "-",
 		},
 		Spec: wfv1.WorkflowSpec{
 			Entrypoint: "build-and-push",

@@ -2,6 +2,10 @@ cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
+github.com/argoproj/argo-events v1.8.1 h1:FmaQwaYve8Z2yxBiBVnHj65NSeckl28nablI3h4rrQU=
+github.com/argoproj/argo-events v1.8.1/go.mod h1:8tLIz8jrCyZF5io/cju6fx3KnplltY5CiuE+djeT5/0=
+github.com/argoproj/argo-workflows/v3 v3.5.14 h1:x51bmtdfraXtxrd9QRpK3daM7txXe/GpGTcyRs6bsy4=
+github.com/argoproj/argo-workflows/v3 v3.5.14/go.mod h1:AJV9jeUtPgeDcJkoIJUwG4P006RvT4o6UkKXOza3F88=
 github.com/argoproj/argo-workflows/v3 v3.6.7 h1:3vT0ygPVtZxSSUaZsCeI+Th/Bm9Cfc2J1FQOGe2iKoM=
 github.com/argoproj/argo-workflows/v3 v3.6.7/go.mod h1:mQbGM8aGyFJwtm9bfmOxLu2SxJDsPosMPHiztR7YmOE=
 github.com/bytedance/sonic v1.12.0 h1:YGPgxF9xzaCNvd/ZKdQ28yRovhfMFZQjuk6fKBzZ3ls=

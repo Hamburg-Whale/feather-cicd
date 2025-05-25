@@ -61,3 +61,14 @@ type CreateWebhookReq struct {
 	BranchFilter string `json:"branch_filter" binding:"required"`
 	Url          string `json:"url" binding:"required"`
 }
+
+type CreateJobBasedJavaReq struct {
+	Name          string `json:"name"`
+	Namespace     string `json:"namespace"`
+	Jdk           string `json:"jdk"`
+	BuildTool     string `json:"build_tool"`
+	Url           string `json:"url"`
+	ImageRegistry string `json:"image_registry"`
+	ImageName     string `json:"image_name"`
+	ImageTag      string `json:"image_tag"`
+}
