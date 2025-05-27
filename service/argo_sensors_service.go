@@ -29,7 +29,7 @@ func (service *Service) CreateArgoSensor(req *types.CreateJobBasedJavaReq) error
 		log.Fatalf("dynamic client 생성 실패: %v", err)
 	}
 
-	workflowScript, err := CreateArgoWorkflowScript(req)
+	workflowScript, err := service.CreateArgoWorkflowScript(req)
 	if err != nil {
 		log.Fatalf("Workflow Script 생성 실패 : %v", err)
 	}
@@ -58,7 +58,7 @@ func (service *Service) CreateArgoSensor(req *types.CreateJobBasedJavaReq) error
 		DockerUser:         "DockerUser",
 	}
 
-	tmpl, err := template.New("sensor.tmpl").Funcs(sprig.TxtFuncMap()).ParseFiles("./sensor.tmpl")
+	tmpl, err := template.New("sensor.tmpl").Funcs(sprig.TxtFuncMap()).ParseFiles("assets/templates/argo/sensor.tmpl")
 	if err != nil {
 		return fmt.Errorf("sensor.tmpl 파일 읽기 실패: %w", err)
 	}
