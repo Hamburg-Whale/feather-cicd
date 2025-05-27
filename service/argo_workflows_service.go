@@ -14,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func CreateArgoWorkflowScript(req *types.CreateJobBasedJavaReq) (string, error) {
+func (service *Service) CreateArgoWorkflowScript(req *types.CreateJobBasedJavaReq) (string, error) {
 	workflowScript, err := buildCommand(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to reate workflow script: %w", err)

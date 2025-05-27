@@ -9,6 +9,7 @@ import (
 
 	"feather/types"
 
+	"github.com/Masterminds/sprig/v3"
 	"sigs.k8s.io/yaml"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,7 +58,7 @@ func (service *Service) CreateArgoSensor(req *types.CreateJobBasedJavaReq) error
 		DockerUser:         "DockerUser",
 	}
 
-	tmpl, err := template.ParseFiles("assets/templates/argo/sensor.tmpl")
+	tmpl, err := template.New("sensor.tmpl").Funcs(sprig.TxtFuncMap()).ParseFiles("./sensor.tmpl")
 	if err != nil {
 		return fmt.Errorf("sensor.tmpl 파일 읽기 실패: %w", err)
 	}

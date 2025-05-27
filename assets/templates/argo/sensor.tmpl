@@ -29,8 +29,8 @@ spec:
                       image: docker:24.0
                       command: ["/bin/sh", "-c"]
                       args:
-                        - |
-                          {{.WorkflowScript}}
+                        - |-
+                          {{- .WorkflowScript | nindent 26 }}
                       env:
                         - name: DOCKER_USER
                           value: {{.DockerUser}}
