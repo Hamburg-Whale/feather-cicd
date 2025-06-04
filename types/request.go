@@ -35,7 +35,7 @@ GenerateRepoOption{
 }
 */
 
-type CreateRepoReq struct {
+type CreateRepoBasedTemplateReq struct {
 	WebhookFlag      bool             `json:"webhook_flag"`
 	Url              string           `json:"url" binding:"required"`
 	Token            string           `json:"token" binding:"required"`
@@ -71,4 +71,20 @@ type CreateJobBasedJavaReq struct {
 	ImageRegistry string `json:"image_registry"`
 	ImageName     string `json:"image_name"`
 	ImageTag      string `json:"image_tag"`
+}
+
+type CreateRepoReq struct {
+	Url         string `json:"url" binding:"required"`
+	Description string `json:"description,omitempty"`
+	Name        string `json:"name" binding:"required"`
+	Owner       string `json:"owner" binding:"required"`
+	Private     bool   `json:"private,omitempty"`
+	Token       string `json:"token" binding:"required"`
+}
+
+type CheckRepoReq struct {
+	Url   string `json:"url" binding:"required"`
+	Token string `json:"token" binding:"required"`
+	Owner string `json:"owner" binding:"required"`
+	Name  string `json:"name" binding:"required"`
 }

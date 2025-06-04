@@ -1,15 +1,12 @@
 package service
 
 import (
-	"bytes"
 	"encoding/json"
 	"feather/types"
 	"fmt"
-	"io"
-	"net/http"
 )
 
-func (service *Service) CreateRepo(req *types.CreateRepoReq) (*types.Response, error) {
+func (service *Service) CreateRepo(req *types.CreateRepoBasedTemplateReq) (*types.Response, error) {
 	repoURL := fmt.Sprintf("%s/api/v1/repos/%s/%s/generate", req.Url, req.TemplateOwner, req.TemplateRepo)
 
 	payload := map[string]interface{}{
@@ -27,7 +24,7 @@ func (service *Service) CreateRepo(req *types.CreateRepoReq) (*types.Response, e
 		"webhooks":         req.Webhooks,
 	}
 
-	res, err := doJSONPost(repoURL, req.Token, payload)
+	res, err := DoJSONPost(repoURL, req.Token, payload)
 	if err != nil {
 		return nil, fmt.Errorf("리포지토리 생성 실패: %w", err)
 	}
@@ -67,40 +64,9 @@ func createWebhook(baseURL, token, owner, repo string, req *types.CreateWebhookR
 		"active":        true,
 	}
 
-	_, err := doJSONPost(hookURL, token, payload)
+	_, err := DoJSONPost(hookURL, token, payload)
 	if err != nil {
 		return fmt.Errorf("웹훅 요청 실패: %w", err)
 	}
 	return nil
-}
-
-func doJSONPost(url, token string, payload interface{}) (*http.Response, error) {
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return nil, fmt.Errorf("JSON 직렬화 실패: %w", err)
-	}
-
-	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
-	if err != nil {
-		return nil, fmt.Errorf("요청 생성 실패: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	if token != "" {
-		req.Header.Set("Authorization", "token "+token)
-	}
-
-	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("요청 실패: %w", err)
-	}
-
-	if res.StatusCode >= 300 {
-		defer res.Body.Close()
-		bodyBytes, _ := io.ReadAll(res.Body)
-		return nil, fmt.Errorf("요청 실패: %s", string(bodyBytes))
-	}
-
-	return res, nil
 }
