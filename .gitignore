@@ -1,5 +1,5 @@
-# Created by https://www.toptal.com/developers/gitignore/api/go,goland+all,windows,visualstudiocode
-# Edit at https://www.toptal.com/developers/gitignore?templates=go,goland+all,windows,visualstudiocode
+# Created by https://www.toptal.com/developers/gitignore/api/go,visualstudiocode,goland+all
+# Edit at https://www.toptal.com/developers/gitignore?templates=go,visualstudiocode,goland+all
 
 ### Go ###
 # If you prefer the allow list template instead of the deny list, see community template:
@@ -131,30 +131,4 @@ fabric.properties
 .history
 .ionide
 
-### Windows ###
-# Windows thumbnail cache files
-Thumbs.db
-Thumbs.db:encryptable
-ehthumbs.db
-ehthumbs_vista.db
-
-# Dump file
-*.stackdump
-
-# Folder config file
-[Dd]esktop.ini
-
-# Recycle Bin used on file shares
-$RECYCLE.BIN/
-
-# Windows Installer files
-*.cab
-*.msi
-*.msix
-*.msm
-*.msp
-
-# Windows shortcuts
-*.lnk
-
-# End of https://www.toptal.com/developers/gitignore/api/go,goland+all,windows,visualstudiocode
+# End of https://www.toptal.com/developers/gitignore/api/go,visualstudiocode,goland+all

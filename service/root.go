@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"encoding/json"
+	"feather/repository"
 	"feather/types"
 	"fmt"
 	"io"
@@ -14,28 +15,14 @@ import (
 
 type Service struct {
 	httpClient *http.Client
+	repository *repository.Repository
 }
 
-func NewService() *Service {
+func NewService(repository *repository.Repository) *Service {
 	return &Service{
 		httpClient: &http.Client{},
+		repository: repository,
 	}
-}
-
-type CreateUserRes struct {
-	Email string `json:"email"`
-}
-
-func (service *Service) CreateUser(email string, password string) (*types.Response, error) {
-	_, err := fmt.Println("email: ", email, "password: ", password)
-	if err != nil {
-		log.Println("회원 생성에 실패했습니다. : ", err.Error())
-		return nil, err
-	}
-
-	return types.NewRes(200, CreateUserRes{
-		Email: email,
-	}, "User created successfully"), nil
 }
 
 // func (service *Service) AuthUser(req *types.AuthUserReq) (*types.Response, error) {
@@ -128,5 +115,77 @@ func (s *Service) doJSONRequest(method, url, token string, payload interface{}) 
 		return nil, fmt.Errorf("HTTP %d: %s", res.StatusCode, string(respBody))
 	}
 
+	return res, nil
+}
+
+func (s *Service) CreateUser(email string, password string, nickname string) error {
+	err := s.repository.CreateUser(email, password, nickname)
+	if err != nil {
+		log.Println("회원 생성에 실패했습니다. : ", "err", err.Error())
+		return fmt.Errorf("회원 생성 실패: %w", err)
+	}
+	return nil
+}
+
+func (s *Service) User(userId int64) (*types.User, error) {
+	res, err := s.repository.User(userId)
+	if err != nil {
+		log.Println("회원 조회에 실패했습니다. : ", "err", err.Error())
+		return nil, fmt.Errorf("회원 조회 실패: %w", err)
+	}
+	return res, nil
+}
+
+func (s *Service) CreateBaseCamp(name string, url string, token string, userId int64) error {
+	err := s.repository.CreateBaseCamp(name, url, token, userId)
+	if err != nil {
+		log.Println("베이스캠프 생성에 실패했습니다. : ", "err", err.Error())
+		return fmt.Errorf("베이스캠프 생성 실패: %w", err)
+	}
+	return nil
+}
+
+func (s *Service) BaseCampsByUserId(userId int64) ([]*types.BaseCamp, error) {
+	res, err := s.repository.BaseCampsByUserId(userId)
+	if err != nil {
+		log.Println("베이스캠프 조회에 실패했습니다. : ", "err", err.Error())
+		return nil, fmt.Errorf("베이스캠프 조회 실패: %w", err)
+	}
+	return res, nil
+}
+
+func (s *Service) BaseCamp(baseCampId int64) (*types.BaseCamp, error) {
+	res, err := s.repository.BaseCamp(baseCampId)
+	if err != nil {
+		log.Println("베이스캠프 조회에 실패했습니다. : ", "err", err.Error())
+		return nil, fmt.Errorf("베이스캠프 조회 실패: %w", err)
+	}
+	return res, nil
+}
+
+func (s *Service) CreateProject(name string, url string, owner string, private bool, baseCampId int64) error {
+	err := s.repository.CreateProject(name, url, owner, private, baseCampId)
+	if err != nil {
+		log.Println("프로젝트 생성에 실패했습니다. : ", "err", err.Error())
+		return fmt.Errorf("프로젝트 생성 실패: %w", err)
+	}
+	return nil
+}
+
+func (s *Service) ProjectsByBaseCampId(baseCampId int64) ([]*types.Project, error) {
+	res, err := s.repository.ProjectsByBaseCampId(baseCampId)
+	if err != nil {
+		log.Println("프로젝트 조회에 실패했습니다. : ", "err", err.Error())
+		return nil, fmt.Errorf("프로젝트 조회 실패: %w", err)
+	}
+	return res, nil
+}
+
+func (s *Service) Project(projectId int64) (*types.Project, error) {
+	res, err := s.repository.Project(projectId)
+	if err != nil {
+		log.Println("프로젝트 조회에 실패했습니다. : ", "err", err.Error())
+		return nil, fmt.Errorf("프로젝트 조회 실패: %w", err)
+	}
 	return res, nil
 }
