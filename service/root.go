@@ -13,14 +13,15 @@ import (
 )
 
 type Service struct {
+	httpClient *http.Client
 }
 
-// NewService Repository를 주입받아 새로운 Service를 생성합니다.
 func NewService() *Service {
-	return &Service{}
+	return &Service{
+		httpClient: &http.Client{},
+	}
 }
 
-// CreateUser 서비스에 대한 신규 사용자를 생성합니다.
 type CreateUserRes struct {
 	Email string `json:"email"`
 }
@@ -88,41 +89,27 @@ func GetKubeConfig() (*rest.Config, error) {
 	return rest.InClusterConfig()
 }
 
-func DoJSONGet(url, token string) (*http.Response, error) {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("요청 생성 실패: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	if token != "" {
-		req.Header.Set("Authorization", "token "+token)
-	}
-
-	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("요청 실패: %w", err)
-	}
-
-	if res.StatusCode >= 300 {
-		defer res.Body.Close()
-		bodyBytes, _ := io.ReadAll(res.Body)
-		return nil, fmt.Errorf("요청 실패: %s", string(bodyBytes))
-	}
-
-	return res, nil
+func (s *Service) DoJSONGet(url, token string) (*http.Response, error) {
+	return s.doJSONRequest("GET", url, token, nil)
 }
 
-func DoJSONPost(url, token string, payload interface{}) (*http.Response, error) {
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return nil, fmt.Errorf("JSON 직렬화 실패: %w", err)
+func (s *Service) DoJSONPost(url, token string, payload interface{}) (*http.Response, error) {
+	return s.doJSONRequest("POST", url, token, payload)
+}
+
+func (s *Service) doJSONRequest(method, url, token string, payload interface{}) (*http.Response, error) {
+	var body io.Reader
+	if payload != nil {
+		jsonBytes, err := json.Marshal(payload)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal payload: %w", err)
+		}
+		body = bytes.NewReader(jsonBytes)
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
+	req, err := http.NewRequest(method, url, body)
 	if err != nil {
-		return nil, fmt.Errorf("요청 생성 실패: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -130,16 +117,15 @@ func DoJSONPost(url, token string, payload interface{}) (*http.Response, error) 
 		req.Header.Set("Authorization", "token "+token)
 	}
 
-	client := &http.Client{}
-	res, err := client.Do(req)
+	res, err := s.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("요청 실패: %w", err)
+		return nil, fmt.Errorf("request failed: %w", err)
 	}
 
 	if res.StatusCode >= 300 {
 		defer res.Body.Close()
-		bodyBytes, _ := io.ReadAll(res.Body)
-		return nil, fmt.Errorf("요청 실패: %s", string(bodyBytes))
+		respBody, _ := io.ReadAll(res.Body)
+		return nil, fmt.Errorf("HTTP %d: %s", res.StatusCode, string(respBody))
 	}
 
 	return res, nil

@@ -35,46 +35,61 @@ GenerateRepoOption{
 }
 */
 
-type CreateRepoBasedTemplateReq struct {
-	WebhookFlag      bool             `json:"webhook_flag"`
-	Url              string           `json:"url" binding:"required"`
-	Token            string           `json:"token" binding:"required"`
-	TemplateOwner    string           `json:"template_owner" binding:"required"`
-	TemplateRepo     string           `json:"template_repo" binding:"required"`
-	Avatar           bool             `json:"avatar"`
-	DefaultBranch    string           `json:"default_branch"`
-	Description      string           `json:"description"`
-	GitContent       bool             `json:"git_content"`
-	GitHooks         bool             `json:"git_hooks"`
-	Labels           bool             `json:"labels"`
-	Name             string           `json:"name"`
-	Owner            string           `json:"owner"`
-	Private          bool             `json:"private"`
-	ProtectedBranch  bool             `json:"protected_branch"`
-	Topics           bool             `json:"topics"`
-	Webhooks         bool             `json:"webhooks"`
-	CreateWebhookReq CreateWebhookReq `json:"create_webhook_req"`
+type RepoFromTemplateRequest struct {
+	// General Info
+	URL     string `json:"url" binding:"required"`
+	Token   string `json:"token" binding:"required"`
+	Owner   string `json:"owner" binding:"required"`
+	Name    string `json:"name" binding:"required"`
+	Private bool   `json:"private,omitempty"`
+
+	// Template Info
+	Template TemplateInfo `json:"template" binding:"required"`
+
+	// Optional Features
+	Options TemplateRepoOptions `json:"options,omitempty"`
+
+	// Webhook
+	WebhookEnabled bool           `json:"webhook_enabled"`
+	Webhook        *WebhookConfig `json:"webhook,omitempty"`
 }
 
-type CreateWebhookReq struct {
-	Type         string `json:"type"`
+type TemplateInfo struct {
+	Owner string `json:"owner" binding:"required"`
+	Repo  string `json:"repo" binding:"required"`
+}
+
+type TemplateRepoOptions struct {
+	Avatar          bool   `json:"avatar,omitempty"`
+	DefaultBranch   string `json:"default_branch,omitempty"`
+	Description     string `json:"description,omitempty"`
+	GitContent      bool   `json:"git_content,omitempty"`
+	GitHooks        bool   `json:"git_hooks,omitempty"`
+	Labels          bool   `json:"labels,omitempty"`
+	ProtectedBranch bool   `json:"protected_branch,omitempty"`
+	Topics          bool   `json:"topics,omitempty"`
+	Webhooks        bool   `json:"webhooks,omitempty"`
+}
+
+type WebhookConfig struct {
+	Type         string `json:"type,omitempty"` // default is "gitea"
 	BranchFilter string `json:"branch_filter" binding:"required"`
-	Url          string `json:"url" binding:"required"`
+	URL          string `json:"url" binding:"required"`
 }
 
-type CreateJobBasedJavaReq struct {
-	Name          string `json:"name"`
-	Namespace     string `json:"namespace"`
-	Jdk           string `json:"jdk"`
-	BuildTool     string `json:"build_tool"`
-	Url           string `json:"url"`
-	ImageRegistry string `json:"image_registry"`
-	ImageName     string `json:"image_name"`
-	ImageTag      string `json:"image_tag"`
+type JobBasedJavaRequest struct {
+	Name          string `json:"name" binding:"required"`
+	Namespace     string `json:"namespace" binding:"required"`
+	JDK           string `json:"jdk" binding:"required"`
+	BuildTool     string `json:"build_tool" binding:"required"`
+	URL           string `json:"url" binding:"required"`
+	ImageRegistry string `json:"image_registry" binding:"required"`
+	ImageName     string `json:"image_name" binding:"required"`
+	ImageTag      string `json:"image_tag" binding:"required"`
 }
 
-type CreateRepoReq struct {
-	Url         string `json:"url" binding:"required"`
+type CreateRepoRequest struct {
+	URL         string `json:"url" binding:"required"`
 	Description string `json:"description,omitempty"`
 	Name        string `json:"name" binding:"required"`
 	Owner       string `json:"owner" binding:"required"`
@@ -82,9 +97,17 @@ type CreateRepoReq struct {
 	Token       string `json:"token" binding:"required"`
 }
 
-type CheckRepoReq struct {
-	Url   string `json:"url" binding:"required"`
+type CheckRepoRequest struct {
+	URL   string `json:"url" binding:"required"`
 	Token string `json:"token" binding:"required"`
 	Owner string `json:"owner" binding:"required"`
 	Name  string `json:"name" binding:"required"`
+}
+
+type CheckFileRequest struct {
+	URL      string `json:"url" binding:"required"`
+	Token    string `json:"token" binding:"required"`
+	Owner    string `json:"owner" binding:"required"`
+	Repo     string `json:"repo" binding:"required"`
+	FilePath string `json:"file_path" binding:"required"`
 }

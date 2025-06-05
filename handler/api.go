@@ -31,7 +31,7 @@ func (handler *handler) createUser(ctx *gin.Context) {
 }
 
 func (handler *handler) createRepo(ctx *gin.Context) {
-	var req *types.CreateRepoReq
+	var req *types.RepoFromTemplateRequest
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response(ctx, http.StatusUnprocessableEntity, err.Error())
@@ -43,7 +43,7 @@ func (handler *handler) createRepo(ctx *gin.Context) {
 }
 
 func (handler *handler) createArgoCi(ctx *gin.Context) {
-	var req *types.CreateJobBasedJavaReq
+	var req *types.JobBasedJavaRequest
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response(ctx, http.StatusUnprocessableEntity, err.Error())

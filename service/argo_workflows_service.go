@@ -14,21 +14,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (service *Service) CreateArgoWorkflowScript(req *types.CreateJobBasedJavaReq) (string, error) {
-	workflowScript, err := buildCommand(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to reate workflow script: %w", err)
-	}
-	return workflowScript, nil
+func (s *Service) CreateArgoWorkflowScript(req *types.JobBasedJavaRequest) (string, error) {
+	return renderWorkflowScript(req)
 }
 
-func buildCommand(req *types.CreateJobBasedJavaReq) (string, error) {
+func renderWorkflowScript(req *types.JobBasedJavaRequest) (string, error) {
 	data := struct {
 		JDK, BuildTool, URL, ImageRegistry, ImageName, ImageTag string
 	}{
-		JDK:           req.Jdk,
+		JDK:           req.JDK,
 		BuildTool:     req.BuildTool,
-		URL:           req.Url,
+		URL:           req.URL,
 		ImageRegistry: req.ImageRegistry,
 		ImageName:     req.ImageName,
 		ImageTag:      req.ImageTag,
@@ -36,14 +32,14 @@ func buildCommand(req *types.CreateJobBasedJavaReq) (string, error) {
 
 	tmpl, err := template.ParseFiles("assets/templates/argo/ci.tmpl")
 	if err != nil {
-		return "", fmt.Errorf("failed to parse template file: %w", err)
+		return "", fmt.Errorf("template parsing error: %w", err)
 	}
 
-	var buf strings.Builder
-	if err := tmpl.Execute(&buf, data); err != nil {
-		return "", fmt.Errorf("failed to execute template: %w", err)
+	var out strings.Builder
+	if err := tmpl.Execute(&out, data); err != nil {
+		return "", fmt.Errorf("template execution error: %w", err)
 	}
-	return buf.String(), nil
+	return out.String(), nil
 }
 
 /*
@@ -66,19 +62,33 @@ spec:
 			securityContext:
 			  privileged: true
 */
-func (service *Service) CreateArgoWorkflowsJobBasedSpringBoot(req *types.CreateJobBasedJavaReq) error {
+func (s *Service) CreateArgoWorkflowsJobBasedSpringBoot(req *types.JobBasedJavaRequest) error {
 	config, err := GetKubeConfig()
 	if err != nil {
-		log.Fatalf("failed to load in-cluster config: %v", err)
+		return fmt.Errorf("kubeconfig load failed: %w", err)
+	}
+
+	command, err := renderWorkflowScript(req)
+	if err != nil {
+		return fmt.Errorf("workflow command render failed: %w", err)
 	}
 
 	wfClient := wfclientset.NewForConfigOrDie(config).ArgoprojV1alpha1().Workflows(req.Namespace)
+	workflow := newSpringBootWorkflow(req.Name, command)
 
-	command, err := buildCommand(req)
+	result, err := wfClient.Create(context.TODO(), workflow, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("workflow creation failed: %w", err)
+	}
 
-	workflow := &wfv1.Workflow{
+	log.Printf("Workflow submitted: %s", result.Name)
+	return nil
+}
+
+func newSpringBootWorkflow(name, command string) *wfv1.Workflow {
+	return &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: req.Name + "-",
+			GenerateName: name + "-",
 		},
 		Spec: wfv1.WorkflowSpec{
 			Entrypoint: "build-and-push",
@@ -97,13 +107,6 @@ func (service *Service) CreateArgoWorkflowsJobBasedSpringBoot(req *types.CreateJ
 			},
 		},
 	}
-
-	result, err := wfClient.Create(context.TODO(), workflow, metav1.CreateOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to create workflow: %w", err)
-	}
-	fmt.Println("Workflow submitted:", result.Name)
-	return nil
 }
 
 func boolPtr(b bool) *bool {

@@ -10,31 +10,56 @@ import (
 	"feather/types"
 
 	"github.com/Masterminds/sprig/v3"
-	"sigs.k8s.io/yaml"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	"sigs.k8s.io/yaml"
 )
 
-func (service *Service) CreateArgoSensor(req *types.CreateJobBasedJavaReq) error {
+func (s *Service) CreateArgoSensor(req *types.JobBasedJavaRequest) error {
 	config, err := GetKubeConfig()
 	if err != nil {
-		log.Fatalf("failed to load in-cluster config: %v", err)
+		return fmt.Errorf("failed to get Kubernetes config: %w", err)
 	}
 
-	dyn, err := dynamic.NewForConfig(config)
+	client, err := dynamic.NewForConfig(config)
 	if err != nil {
-		log.Fatalf("dynamic client 생성 실패: %v", err)
+		return fmt.Errorf("failed to create dynamic client: %w", err)
 	}
 
-	workflowScript, err := service.CreateArgoWorkflowScript(req)
+	workflowScript, err := s.CreateArgoWorkflowScript(req)
 	if err != nil {
-		log.Fatalf("Workflow Script 생성 실패 : %v", err)
+		return fmt.Errorf("failed to generate Argo workflow script: %w", err)
 	}
 
-	sensorParams := struct {
+	sensorYaml, err := renderSensorTemplate(req, workflowScript)
+	if err != nil {
+		return fmt.Errorf("failed to render sensor template: %w", err)
+	}
+
+	var obj unstructured.Unstructured
+	if err := yaml.Unmarshal(sensorYaml, &obj); err != nil {
+		return fmt.Errorf("failed to decode sensor YAML: %w", err)
+	}
+
+	gvr := schema.GroupVersionResource{
+		Group:    "argoproj.io",
+		Version:  "v1alpha1",
+		Resource: "sensors",
+	}
+
+	resource, err := client.Resource(gvr).Namespace(req.Namespace).Create(context.Background(), &obj, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to create sensor resource: %w", err)
+	}
+
+	log.Printf("Sensor created: %s", resource.GetName())
+	return nil
+}
+
+func renderSensorTemplate(req *types.JobBasedJavaRequest, workflowScript string) ([]byte, error) {
+	params := struct {
 		Namespace          string
 		SensorName         string
 		ServiceAccountName string
@@ -60,31 +85,12 @@ func (service *Service) CreateArgoSensor(req *types.CreateJobBasedJavaReq) error
 
 	tmpl, err := template.New("sensor.tmpl").Funcs(sprig.TxtFuncMap()).ParseFiles("assets/templates/argo/sensor.tmpl")
 	if err != nil {
-		return fmt.Errorf("sensor.tmpl 파일 읽기 실패: %w", err)
+		return nil, err
 	}
 
 	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, sensorParams)
-	if err != nil {
-		return fmt.Errorf("템플릿 실행 실패: %w", err)
+	if err := tmpl.Execute(&buf, params); err != nil {
+		return nil, err
 	}
-
-	var obj unstructured.Unstructured
-	if err := yaml.Unmarshal(buf.Bytes(), &obj); err != nil {
-		return fmt.Errorf("Sensor YAML 디코딩 실패: %w", err)
-	}
-
-	gvr := schema.GroupVersionResource{
-		Group:    "argoproj.io",
-		Version:  "v1alpha1",
-		Resource: "sensors",
-	}
-
-	res, err := dyn.Resource(gvr).Namespace(sensorParams.Namespace).Create(context.Background(), &obj, metav1.CreateOptions{})
-	if err != nil {
-		return fmt.Errorf("Sensor 생성 실패: %w", err)
-	}
-
-	log.Printf("Sensor 생성 완료: %s\n", res.GetName())
-	return nil
+	return buf.Bytes(), nil
 }
