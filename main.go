@@ -6,6 +6,8 @@ import (
 	"feather/repository"
 	"feather/service"
 	"flag"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var pathFlag = flag.String("config", "./config.toml", "config set")

@@ -6,6 +6,23 @@ type CreateUserReq struct {
 	Nickname string `json:"nickname" binding:"required"`
 }
 
+type CreateBasecampReq struct {
+	Name  string `json:"name" binding:"required"`
+	URL   string `json:"url" binding:"required"`
+	Token string `json:"token" binding:"required"`
+
+	User_ID int64 `json:"user_id" binding:"required"`
+}
+
+type CreateProjectReq struct {
+	Name    string `json:"name" binding:"required"`
+	URL     string `json:"url" binding:"required"`
+	Owner   string `json:"owner" binding:"required"`
+	Private bool   `json:"private,omitempty"`
+
+	BaseCamp_ID int64 `json:"basecamp_id" binding:"required"`
+}
+
 // Gitea Auth with Token
 // https://demo.gitea.com/api/swagger#/user/userGetCurrent
 type AuthUserReq struct {

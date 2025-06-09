@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"strings"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type Repository struct {

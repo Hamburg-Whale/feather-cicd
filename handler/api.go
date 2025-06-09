@@ -17,6 +17,12 @@ func registerServer(server *Server) {
 	server.engine.POST("/api/v1/user", handler.createUser)
 	server.engine.GET("/api/v1/user/:id", handler.User)
 
+	server.engine.POST("/api/v1/basecamp", handler.createBasecamp)
+	server.engine.GET("/api/v1/basecamp/:id", handler.BaseCamp)
+
+	server.engine.POST("/api/v1/project", handler.CreateProject)
+	server.engine.GET("/api/v1/project/:id", handler.Project)
+
 	server.engine.POST("/api/v1/repo", handler.createRepo)
 
 	server.engine.POST("/api/v1/ci", handler.createArgoCi)
@@ -43,6 +49,60 @@ func (handler *handler) User(ctx *gin.Context) {
 	}
 
 	if res, err := handler.server.service.User(id); err != nil {
+		response(ctx, http.StatusInternalServerError, err.Error())
+	} else {
+		response(ctx, http.StatusOK, res)
+	}
+}
+
+func (handler *handler) createBasecamp(ctx *gin.Context) {
+	var req types.CreateBasecampReq
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response(ctx, http.StatusUnprocessableEntity, err.Error())
+	} else if err := handler.server.service.CreateBaseCamp(req.Name, req.URL, req.Token, req.User_ID); err != nil {
+		response(ctx, http.StatusInternalServerError, err.Error())
+	} else {
+		response(ctx, http.StatusOK, "Success")
+	}
+}
+
+func (handler *handler) BaseCamp(ctx *gin.Context) {
+	basecampId := ctx.Param("id")
+	id, err := strconv.ParseInt(basecampId, 10, 64)
+	if err != nil {
+		response(ctx, http.StatusBadRequest, "Invalid basecamp ID")
+		return
+	}
+
+	if res, err := handler.server.service.BaseCamp(id); err != nil {
+		response(ctx, http.StatusInternalServerError, err.Error())
+	} else {
+		response(ctx, http.StatusOK, res)
+	}
+}
+
+func (handler *handler) CreateProject(ctx *gin.Context) {
+	var req types.CreateProjectReq
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response(ctx, http.StatusUnprocessableEntity, err.Error())
+	} else if err := handler.server.service.CreateProject(req.Name, req.URL, req.Owner, req.Private, req.BaseCamp_ID); err != nil {
+		response(ctx, http.StatusInternalServerError, err.Error())
+	} else {
+		response(ctx, http.StatusOK, "Success")
+	}
+}
+
+func (handler *handler) Project(ctx *gin.Context) {
+	projectId := ctx.Param("id")
+	id, err := strconv.ParseInt(projectId, 10, 64)
+	if err != nil {
+		response(ctx, http.StatusBadRequest, "Invalid project ID")
+		return
+	}
+
+	if res, err := handler.server.service.Project(id); err != nil {
 		response(ctx, http.StatusInternalServerError, err.Error())
 	} else {
 		response(ctx, http.StatusOK, res)
