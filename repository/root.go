@@ -43,7 +43,7 @@ func (r *Repository) CreateUser(email string, password string, nickname string) 
 
 func (r *Repository) User(userId int64) (*types.User, error) {
 	u := new(types.User)
-	qs := query([]string{"SELECT * FROM", users, "WHERE id = ?"})
+	qs := query([]string{"SELECT id, email, nickname FROM", users, "WHERE id = ?"})
 	if err := r.db.QueryRow(qs, userId).Scan(&u.ID, &u.Email, &u.Nickname); err != nil {
 		if err := noResult(err); err != nil {
 			return nil, err
@@ -54,17 +54,31 @@ func (r *Repository) User(userId int64) (*types.User, error) {
 	return u, nil
 }
 
-func (r *Repository) CreateBaseCamp(name string, url string, token string, userId int64) error {
-	if _, err := r.db.Exec("INSERT INTO feather.basecamp(name, url, token, user_id) VALUES(?, ?, ?, ?)",
-		name, url, token, userId); err != nil {
+func (r *Repository) CreateBaseCamp(name string, url string, token string, owner string, userId int64) error {
+	if _, err := r.db.Exec("INSERT INTO feather.basecamp(name, url, token, owner, user_id) VALUES(?, ?, ?, ?, ?)",
+		name, url, token, owner, userId); err != nil {
 		return err
 	}
 	log.Println("CreateBaseCamp Query run successfully!")
 	return nil
 }
 
+func (r *Repository) TokenByBaseCampId(baseCampId int64) (string, error) {
+	var token string
+	qs := query([]string{"SELECT * FROM", basecamps, "WHERE id = ?"})
+
+	if err := r.db.QueryRow(qs, baseCampId).Scan(&token); err != nil {
+		if err := noResult(err); err != nil {
+			return "", err
+		}
+	}
+
+	log.Println("TokenByBaseCampId Query run successfully!")
+	return token, nil
+}
+
 func (r *Repository) BaseCampsByUserId(userId int64) ([]*types.BaseCamp, error) {
-	qs := query([]string{"SELECT * FROM", basecamps, "WHERE user_id = ?"})
+	qs := query([]string{"SELECT id, name, url, token, user_id FROM", basecamps, "WHERE user_id = ?"})
 	rows, err := r.db.Query(qs, userId)
 	if err != nil {
 		return nil, fmt.Errorf("query execution failed: %w", err)
@@ -75,7 +89,7 @@ func (r *Repository) BaseCampsByUserId(userId int64) ([]*types.BaseCamp, error) 
 
 	for rows.Next() {
 		b := new(types.BaseCamp)
-		if err := rows.Scan(&b.ID, &b.Name, &b.URL, &b.Token, &b.User_ID); err != nil {
+		if err := rows.Scan(&b.ID, &b.Name, &b.URL, &b.Owner, &b.Token, &b.User_ID); err != nil {
 			return nil, fmt.Errorf("row scan failed: %w", err)
 		}
 		baseCamps = append(baseCamps, b)
@@ -93,7 +107,7 @@ func (r *Repository) BaseCamp(baseCampId int64) (*types.BaseCamp, error) {
 	b := new(types.BaseCamp)
 	qs := query([]string{"SELECT * FROM", basecamps, "WHERE id = ?"})
 
-	if err := r.db.QueryRow(qs, baseCampId).Scan(&b.ID, &b.Name, &b.URL, &b.Token, &b.User_ID); err != nil {
+	if err := r.db.QueryRow(qs, baseCampId).Scan(&b.ID, &b.Name, &b.URL, &b.Owner, &b.Token, &b.User_ID); err != nil {
 		if err := noResult(err); err != nil {
 			return nil, err
 		}
@@ -150,6 +164,40 @@ func (r *Repository) Project(projectId int64) (*types.Project, error) {
 
 	log.Println("Project Query run successfully!")
 	return p, nil
+}
+
+func (r *Repository) ProjectWithBaseCampInfo(projectId int64) (*types.ProjectWithBaseCampInfo, error) {
+	pb := new(types.ProjectWithBaseCampInfo)
+	qs := query([]string{
+		"SELECT",
+		"p.id AS project_id,",         // Project ID
+		"p.name AS project_name,",     // Project Name
+		"p.url AS project_url,",       // Project URL
+		"p.owner AS project_owner,",   // Project Owner
+		"b.url AS base_camp_url,",     // BaseCamp URL
+		"b.owner AS base_camp_owner,", // BaseCamp Owner
+		"b.token AS token,",           // Token
+		"FROM", projects, "p",         // Alias 'projects' table as 'p'
+		"JOIN", basecamps, "b", // Alias 'base_camps' table as 'b'
+		"ON p.basecamp_id = b.id", // JOIN condition
+		"WHERE p.id = ?",
+	})
+	if err := r.db.QueryRow(qs, projectId).Scan(
+		&pb.ProjectID,
+		&pb.ProjectName,
+		&pb.ProjectURL,
+		&pb.ProjectOwner,
+		&pb.BaseCampURL,
+		&pb.BaseCampOwner,
+		&pb.Token,
+	); err != nil {
+		if err := noResult(err); err != nil {
+			return nil, err
+		}
+	}
+
+	log.Println("Project Query run successfully!")
+	return pb, nil
 }
 
 func query(qs []string) string {

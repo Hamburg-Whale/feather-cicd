@@ -10,6 +10,7 @@ type CreateBasecampReq struct {
 	Name  string `json:"name" binding:"required"`
 	URL   string `json:"url" binding:"required"`
 	Token string `json:"token" binding:"required"`
+	Owner string `json:"owner" binding:"required"`
 
 	User_ID int64 `json:"user_id" binding:"required"`
 }
@@ -54,9 +55,10 @@ GenerateRepoOption{
 */
 
 type RepoFromTemplateRequest struct {
+	BaseCampId int64 `json:"basecamp_id" binding:"required"`
+
 	// General Info
 	URL     string `json:"url" binding:"required"`
-	Token   string `json:"token" binding:"required"`
 	Owner   string `json:"owner" binding:"required"`
 	Name    string `json:"name" binding:"required"`
 	Private bool   `json:"private,omitempty"`
@@ -107,6 +109,8 @@ type JobBasedJavaRequest struct {
 }
 
 type CreateRepoRequest struct {
+	BaseCampId int64 `json:"basecamp_id" binding:"required"`
+
 	URL         string `json:"url" binding:"required"`
 	Description string `json:"description,omitempty"`
 	Name        string `json:"name" binding:"required"`
@@ -119,6 +123,29 @@ type CheckRepoRequest struct {
 	URL   string `json:"url" binding:"required"`
 	Token string `json:"token" binding:"required"`
 	Owner string `json:"owner" binding:"required"`
+	Name  string `json:"name" binding:"required"`
+}
+
+type CreateFileRequest struct {
+	URL      string `json:"url" binding:"required"`
+	Token    string `json:"token" binding:"required"`
+	Owner    string `json:"owner" binding:"required"`
+	Repo     string `json:"repo" binding:"required"`
+	FilePath string `json:"file_path" binding:"required"`
+
+	Details FileCommitDetails `json:"payload" binding:"required"`
+}
+
+type FileCommitDetails struct {
+	Author    Author `json:"author" binding:"required"`
+	Branch    string `json:"branch,omitempty"`
+	NewBranch string `json:"new_branch,omitempty"`
+	Content   string `json:"content" binding:"required"`
+	Message   string `json:"message,omitempty"`
+}
+
+type Author struct {
+	Email string `json:"email" binding:"required"`
 	Name  string `json:"name" binding:"required"`
 }
 

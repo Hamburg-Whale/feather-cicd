@@ -26,6 +26,8 @@ func registerServer(server *Server) {
 	server.engine.POST("/api/v1/repo", handler.createRepo)
 
 	server.engine.POST("/api/v1/ci", handler.createArgoCi)
+
+	server.engine.POST("/api/v1/cd/:id", handler.createArgoCd)
 }
 
 func (handler *handler) createUser(ctx *gin.Context) {
@@ -60,7 +62,7 @@ func (handler *handler) createBasecamp(ctx *gin.Context) {
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response(ctx, http.StatusUnprocessableEntity, err.Error())
-	} else if err := handler.server.service.CreateBaseCamp(req.Name, req.URL, req.Token, req.User_ID); err != nil {
+	} else if err := handler.server.service.CreateBaseCamp(req.Name, req.URL, req.Token, req.Owner, req.User_ID); err != nil {
 		response(ctx, http.StatusInternalServerError, err.Error())
 	} else {
 		response(ctx, http.StatusOK, "Success")
@@ -127,6 +129,22 @@ func (handler *handler) createArgoCi(ctx *gin.Context) {
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response(ctx, http.StatusUnprocessableEntity, err.Error())
 	} else if err := handler.server.service.CreateArgoSensor(req); err != nil {
+		response(ctx, http.StatusInternalServerError, err.Error())
+	} else {
+		response(ctx, http.StatusOK, "Success")
+	}
+}
+
+func (handler *handler) createArgoCd(ctx *gin.Context) {
+	baseCampId := ctx.Param("id")
+
+	id, err := strconv.ParseInt(baseCampId, 10, 64)
+	if err != nil {
+		response(ctx, http.StatusBadRequest, "Invalid BaseCamp ID")
+		return
+	}
+
+	if err := handler.server.service.CreateProjectManifestRepo(id); err != nil {
 		response(ctx, http.StatusInternalServerError, err.Error())
 	} else {
 		response(ctx, http.StatusOK, "Success")

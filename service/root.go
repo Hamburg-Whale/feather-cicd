@@ -136,8 +136,8 @@ func (s *Service) User(userId int64) (*types.User, error) {
 	return res, nil
 }
 
-func (s *Service) CreateBaseCamp(name string, url string, token string, userId int64) error {
-	err := s.repository.CreateBaseCamp(name, url, token, userId)
+func (s *Service) CreateBaseCamp(name string, url string, token string, owner string, userId int64) error {
+	err := s.repository.CreateBaseCamp(name, url, token, owner, userId)
 	if err != nil {
 		log.Println("베이스캠프 생성에 실패했습니다. : ", "err", err.Error())
 		return fmt.Errorf("베이스캠프 생성 실패: %w", err)

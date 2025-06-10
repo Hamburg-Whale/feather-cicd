@@ -12,6 +12,8 @@ type BaseCamp struct {
 
 	Name  string `json:"name" binding:"required"`
 	URL   string `json:"url" binding:"required"`
+	Owner string `json:"owner" binding:"required"`
+
 	Token string `json:"token" binding:"required"`
 
 	User_ID int64 `json:"user_id" binding:"required"`

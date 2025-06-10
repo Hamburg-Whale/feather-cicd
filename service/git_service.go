@@ -13,6 +13,11 @@ type GitService struct {
 func (s *Service) CreateRepo(req *types.RepoFromTemplateRequest) (*types.Response, error) {
 	repoURL := fmt.Sprintf("%s/api/v1/repos/%s/%s/generate", req.URL, req.Template.Owner, req.Template.Repo)
 
+	token, err := s.repository.TokenByBaseCampId(req.BaseCampId)
+	if err != nil {
+		return nil, fmt.Errorf("get token by basecampId failed: %w", err)
+	}
+
 	payload := map[string]interface{}{
 		"avatar":           req.Options.Avatar,
 		"default_branch":   req.Options.DefaultBranch,
@@ -28,7 +33,7 @@ func (s *Service) CreateRepo(req *types.RepoFromTemplateRequest) (*types.Respons
 		"webhooks":         req.Options.Webhooks,
 	}
 
-	res, err := s.DoJSONPost(repoURL, req.Token, payload)
+	res, err := s.DoJSONPost(repoURL, token, payload)
 	if err != nil {
 		return nil, fmt.Errorf("repository creation failed: %w", err)
 	}
@@ -57,6 +62,11 @@ func (s *Service) attachWebhook(req *types.RepoFromTemplateRequest) error {
 		hookType = "gitea"
 	}
 
+	token, err := s.repository.TokenByBaseCampId(req.BaseCampId)
+	if err != nil {
+		return fmt.Errorf("get token by basecampId failed: %w", err)
+	}
+
 	payload := map[string]interface{}{
 		"type": hookType,
 		"config": map[string]string{
@@ -68,7 +78,7 @@ func (s *Service) attachWebhook(req *types.RepoFromTemplateRequest) error {
 		"active":        true,
 	}
 
-	if _, err := s.DoJSONPost(hookURL, req.Token, payload); err != nil {
+	if _, err := s.DoJSONPost(hookURL, token, payload); err != nil {
 		return fmt.Errorf("webhook creation failed: %w", err)
 	}
 	log.Printf("Webhook created for: %s/%s", req.Owner, req.Name)
