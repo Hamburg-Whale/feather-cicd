@@ -1,6 +1,7 @@
 package types
 
 type ProjectWithBaseCampInfo struct {
+	BaseCampName  string `json:"baseCamp_name"`
 	BaseCampURL   string `json:"baseCamp_url"`
 	BaseCampOwner string `json:"baseCamp_owner"`
 	Token         string `json:"token"`

@@ -170,14 +170,15 @@ func (r *Repository) ProjectWithBaseCampInfo(projectId int64) (*types.ProjectWit
 	pb := new(types.ProjectWithBaseCampInfo)
 	qs := query([]string{
 		"SELECT",
-		"p.id AS project_id,",         // Project ID
-		"p.name AS project_name,",     // Project Name
-		"p.url AS project_url,",       // Project URL
-		"p.owner AS project_owner,",   // Project Owner
-		"b.url AS base_camp_url,",     // BaseCamp URL
-		"b.owner AS base_camp_owner,", // BaseCamp Owner
-		"b.token AS token,",           // Token
-		"FROM", projects, "p",         // Alias 'projects' table as 'p'
+		"p.id AS project_id,",        // Project ID
+		"p.name AS project_name,",    // Project Name
+		"p.url AS project_url,",      // Project URL
+		"p.owner AS project_owner,",  // Project Owner
+		"b.name AS basecamp_name",    // BaseCamp Name
+		"b.url AS basecamp_url,",     // BaseCamp URL
+		"b.owner AS basecamp_owner,", // BaseCamp Owner
+		"b.token AS token,",          // Token
+		"FROM", projects, "p",        // Alias 'projects' table as 'p'
 		"JOIN", basecamps, "b", // Alias 'base_camps' table as 'b'
 		"ON p.basecamp_id = b.id", // JOIN condition
 		"WHERE p.id = ?",

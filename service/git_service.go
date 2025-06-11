@@ -7,9 +7,6 @@ import (
 	"log"
 )
 
-type GitService struct {
-}
-
 func (s *Service) CreateRepo(req *types.RepoFromTemplateRequest) (*types.Response, error) {
 	repoURL := fmt.Sprintf("%s/api/v1/repos/%s/%s/generate", req.URL, req.Template.Owner, req.Template.Repo)
 

@@ -1,27 +1,115 @@
 package service
 
 import (
+	"bytes"
 	"feather/types"
 	"fmt"
 	"log"
+	"text/template"
+
+	"github.com/Masterminds/sprig/v3"
 )
 
 func (s *Service) CreateProjectManifestRepo(projectId int64) error {
-	const repoName = "feather-argocd"
+	const (
+		repoName         = "feather-argocd"
+		appSetFolderPath = "application-sets"
+		appSetFileName   = "application-set.yaml"
+	)
+
+	filePath := fmt.Sprintf("%s/%s", appSetFolderPath, appSetFileName)
 
 	res, err := s.repository.ProjectWithBaseCampInfo(projectId)
 	if err != nil {
 		return fmt.Errorf("Get BaseCamp failed: %w", err)
 	}
 
-	checkReq := &types.CheckRepoRequest{
-		URL:   res.BaseCampURL,
-		Owner: res.BaseCampOwner,
-		Name:  repoName,
-		Token: res.Token,
+	if err := s.ensureArgoCdRepo(res, repoName); err != nil {
+		return err
 	}
 
-	exists, err := s.repoExists(checkReq)
+	if err := s.ensureApplicationSet(res, repoName, filePath); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) ensureApplicationSet(res *types.ProjectWithBaseCampInfo, repoName string, filePath string) error {
+	checkApplicationSetRepoReq := &types.CheckFileRequest{
+		URL:      res.BaseCampURL,
+		Token:    res.Token,
+		Owner:    res.BaseCampOwner,
+		Repo:     repoName,
+		FilePath: filePath,
+	}
+
+	exists, err := s.fileExists(checkApplicationSetRepoReq)
+	if err != nil {
+		return fmt.Errorf("file check failed: %w", err)
+	}
+
+	if !exists {
+		applicationSetName := fmt.Sprintf("%s-appset", res.BaseCampName)
+		applicationSetURL := fmt.Sprintf("%s/%s.git", res.BaseCampURL, repoName)
+		params := struct {
+			ApplicationSetName string
+			URL                string
+		}{
+			ApplicationSetName: applicationSetName,
+			URL:                applicationSetURL,
+		}
+
+		tmpl, err := template.New("application-set.tmpl").Funcs(sprig.TxtFuncMap()).ParseFiles("assets/templates/argo/application-set.tmpl")
+		if err != nil {
+			return err
+		}
+
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, params); err != nil {
+			return fmt.Errorf("failed to execute application-set template: %w", err)
+		}
+
+		generatedYAML := buf.String()
+
+		author := &types.Author{
+			Email: "feather@feather.com",
+			Name:  "feather",
+		}
+
+		fileCommitDetails := &types.FileCommitDetails{
+			Author:  *author,
+			Content: generatedYAML,
+			Message: "Create Application Set YAML",
+		}
+
+		createReq := &types.CreateFileRequest{
+			URL:      res.BaseCampURL,
+			Token:    res.Token,
+			Owner:    res.BaseCampOwner,
+			Repo:     repoName,
+			FilePath: filePath,
+			Details:  *fileCommitDetails,
+		}
+
+		if err := s.createFile(createReq); err != nil {
+			return fmt.Errorf("failed to create application set file: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (s *Service) ensureArgoCdRepo(res *types.ProjectWithBaseCampInfo, repoName string) error {
+
+	checkArgoCdRepoReq := &types.CheckRepoRequest{
+		URL:   res.BaseCampURL,
+		Token: res.Token,
+		Owner: res.BaseCampOwner,
+		Name:  repoName,
+	}
+
+	exists, err := s.repoExists(checkArgoCdRepoReq)
 	if err != nil {
 		return fmt.Errorf("repository check failed: %w", err)
 	}
@@ -40,6 +128,8 @@ func (s *Service) CreateProjectManifestRepo(projectId int64) error {
 			return fmt.Errorf("failed to create ArgoCD repository: %w", err)
 		}
 		log.Printf("Repository '%s' created successfully.", repoName)
+	} else {
+		log.Printf("Repository '%s' already exists.", repoName)
 	}
 
 	return nil

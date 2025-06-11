@@ -1,12 +1,12 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: dynamic-applications
+  name: .{{ApplicationSetName}}
   namespace: argocd
 spec:
   generators:
   - git:
-      repoURL: https://github.com/your-org/your-argocd-manifests-repo.git
+      repoURL: .{{URL}}
       revision: HEAD
       directories:
       - path: '*'             
