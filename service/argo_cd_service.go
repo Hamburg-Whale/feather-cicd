@@ -15,20 +15,23 @@ func (s *Service) CreateProjectManifestRepo(projectId int64) error {
 		repoName         = "feather-argocd"
 		appSetFolderPath = "application-sets"
 		appSetFileName   = "application-set.yaml"
+		manifestFileName = "manifest.yaml"
 	)
 
-	filePath := fmt.Sprintf("%s/%s", appSetFolderPath, appSetFileName)
+	applicationSetFilePath := fmt.Sprintf("%s/%s", appSetFolderPath, appSetFileName)
 
 	res, err := s.repository.ProjectWithBaseCampInfo(projectId)
 	if err != nil {
 		return fmt.Errorf("Get BaseCamp failed: %w", err)
 	}
 
+	// projectManifestFilePath := fmt.Sprintf("%s/%s", res.ProjectName, manifestFileName)
+
 	if err := s.ensureArgoCdRepo(res, repoName); err != nil {
 		return err
 	}
 
-	if err := s.ensureApplicationSet(res, repoName, filePath); err != nil {
+	if err := s.ensureApplicationSet(res, repoName, applicationSetFilePath); err != nil {
 		return err
 	}
 
