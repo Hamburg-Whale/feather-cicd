@@ -4,6 +4,7 @@ import (
 	"feather/config"
 	"feather/handler"
 	"feather/repository"
+	"feather/router"
 	"feather/service"
 	"flag"
 
@@ -16,12 +17,16 @@ var port = flag.String("port", "localhost:8080", "port set")
 func main() {
 	flag.Parse()
 	c := config.NewConfig(*pathFlag)
-	if r, err := repository.NewRepository(c); err != nil {
+	r, err := repository.NewRepository(c)
+	if err != nil {
 		panic(err)
-	} else {
-		n := handler.NewServer(service.NewService(r), *port)
-		if err := n.StartServer(); err != nil {
-			panic(err)
-		}
+	}
+
+	s := service.NewService(r)
+	app := handler.NewServer(*port)
+	router.RegisterRouter(app.Engine, s)
+
+	if err := app.StartServer(); err != nil {
+		panic(err)
 	}
 }

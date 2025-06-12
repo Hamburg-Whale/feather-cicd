@@ -7,7 +7,7 @@ type User struct {
 	Nickname string `json:"nickname" binding:"required"`
 }
 
-type BaseCamp struct {
+type Basecamp struct {
 	ID int64 `json:"id" binding:"required"`
 
 	Name  string `json:"name" binding:"required"`
@@ -27,5 +27,5 @@ type Project struct {
 	Owner   string `json:"owner" binding:"required"`
 	Private bool   `json:"private,omitempty"`
 
-	BaseCamp_ID int64 `json:"basecamp_id" binding:"required"`
+	Basecamp_ID int64 `json:"basecamp_id" binding:"required"`
 }

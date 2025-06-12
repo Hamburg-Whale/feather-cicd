@@ -17,7 +17,22 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-func (s *Service) CreateArgoSensor(req *types.JobBasedJavaRequest) error {
+type ArgoSensorService interface {
+	CreateArgoSensor(req *types.JobBasedJavaRequest) error
+	renderSensorTemplate(req *types.JobBasedJavaRequest, workflowScript string) ([]byte, error)
+}
+
+type argoSensorServiceImpl struct {
+	argoWorkflowService ArgoWorkflowService
+}
+
+func NewArgoSensorService(argoWorkflowService ArgoWorkflowService) ArgoSensorService {
+	return &argoSensorServiceImpl{
+		argoWorkflowService: argoWorkflowService,
+	}
+}
+
+func (s *argoSensorServiceImpl) CreateArgoSensor(req *types.JobBasedJavaRequest) error {
 	config, err := GetKubeConfig()
 	if err != nil {
 		return fmt.Errorf("failed to get Kubernetes config: %w", err)
@@ -28,12 +43,12 @@ func (s *Service) CreateArgoSensor(req *types.JobBasedJavaRequest) error {
 		return fmt.Errorf("failed to create dynamic client: %w", err)
 	}
 
-	workflowScript, err := s.CreateArgoWorkflowScript(req)
+	workflowScript, err := s.argoWorkflowService.CreateArgoWorkflowScript(req)
 	if err != nil {
 		return fmt.Errorf("failed to generate Argo workflow script: %w", err)
 	}
 
-	sensorYaml, err := renderSensorTemplate(req, workflowScript)
+	sensorYaml, err := s.renderSensorTemplate(req, workflowScript)
 	if err != nil {
 		return fmt.Errorf("failed to render sensor template: %w", err)
 	}
@@ -58,7 +73,7 @@ func (s *Service) CreateArgoSensor(req *types.JobBasedJavaRequest) error {
 	return nil
 }
 
-func renderSensorTemplate(req *types.JobBasedJavaRequest, workflowScript string) ([]byte, error) {
+func (s *argoSensorServiceImpl) renderSensorTemplate(req *types.JobBasedJavaRequest, workflowScript string) ([]byte, error) {
 	params := struct {
 		Namespace          string
 		SensorName         string

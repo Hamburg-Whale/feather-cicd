@@ -14,11 +14,24 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (s *Service) CreateArgoWorkflowScript(req *types.JobBasedJavaRequest) (string, error) {
-	return renderWorkflowScript(req)
+type ArgoWorkflowService interface {
+	CreateArgoWorkflowScript(req *types.JobBasedJavaRequest) (string, error)
+	renderWorkflowScript(req *types.JobBasedJavaRequest) (string, error)
+	CreateArgoWorkflowsJobBasedSpringBoot(req *types.JobBasedJavaRequest) error
 }
 
-func renderWorkflowScript(req *types.JobBasedJavaRequest) (string, error) {
+type argoWorkflowServiceImpl struct {
+}
+
+func NewArgoWorkflowSerivce() ArgoWorkflowService {
+	return &argoWorkflowServiceImpl{}
+}
+
+func (s *argoWorkflowServiceImpl) CreateArgoWorkflowScript(req *types.JobBasedJavaRequest) (string, error) {
+	return s.renderWorkflowScript(req)
+}
+
+func (s *argoWorkflowServiceImpl) renderWorkflowScript(req *types.JobBasedJavaRequest) (string, error) {
 	data := struct {
 		JDK, BuildTool, URL, ImageRegistry, ImageName, ImageTag string
 	}{
@@ -62,13 +75,13 @@ spec:
 			securityContext:
 			  privileged: true
 */
-func (s *Service) CreateArgoWorkflowsJobBasedSpringBoot(req *types.JobBasedJavaRequest) error {
+func (s *argoWorkflowServiceImpl) CreateArgoWorkflowsJobBasedSpringBoot(req *types.JobBasedJavaRequest) error {
 	config, err := GetKubeConfig()
 	if err != nil {
 		return fmt.Errorf("kubeconfig load failed: %w", err)
 	}
 
-	command, err := renderWorkflowScript(req)
+	command, err := s.renderWorkflowScript(req)
 	if err != nil {
 		return fmt.Errorf("workflow command render failed: %w", err)
 	}

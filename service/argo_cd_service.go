@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"feather/repository"
 	"feather/types"
 	"fmt"
 	"log"
@@ -10,7 +11,25 @@ import (
 	"github.com/Masterminds/sprig/v3"
 )
 
-func (s *Service) CreateProjectManifestRepo(projectId int64) error {
+type ArgoCdService interface {
+	CreateProjectManifestRepo(projectId int64) error
+	ensureApplicationSet(res *types.ProjectWithBaseCampInfo, repoName string, filePath string) error
+	ensureArgoCdRepo(res *types.ProjectWithBaseCampInfo, repoName string) error
+}
+
+type argoCdServiceImpl struct {
+	repository *repository.Repository
+	gitService GitService
+}
+
+func NewArgoCdService(repository *repository.Repository, gitService GitService) ArgoCdService {
+	return &argoCdServiceImpl{
+		repository: repository,
+		gitService: gitService,
+	}
+}
+
+func (s *argoCdServiceImpl) CreateProjectManifestRepo(projectId int64) error {
 	const (
 		repoName         = "feather-argocd"
 		appSetFolderPath = "application-sets"
@@ -38,7 +57,7 @@ func (s *Service) CreateProjectManifestRepo(projectId int64) error {
 	return nil
 }
 
-func (s *Service) ensureApplicationSet(res *types.ProjectWithBaseCampInfo, repoName string, filePath string) error {
+func (s *argoCdServiceImpl) ensureApplicationSet(res *types.ProjectWithBaseCampInfo, repoName string, filePath string) error {
 	checkApplicationSetRepoReq := &types.CheckFileRequest{
 		URL:      res.BaseCampURL,
 		Token:    res.Token,
@@ -47,7 +66,7 @@ func (s *Service) ensureApplicationSet(res *types.ProjectWithBaseCampInfo, repoN
 		FilePath: filePath,
 	}
 
-	exists, err := s.fileExists(checkApplicationSetRepoReq)
+	exists, err := s.gitService.FileExists(checkApplicationSetRepoReq)
 	if err != nil {
 		return fmt.Errorf("file check failed: %w", err)
 	}
@@ -95,7 +114,7 @@ func (s *Service) ensureApplicationSet(res *types.ProjectWithBaseCampInfo, repoN
 			Details:  *fileCommitDetails,
 		}
 
-		if err := s.createFile(createReq); err != nil {
+		if err := s.gitService.CreateFile(createReq); err != nil {
 			return fmt.Errorf("failed to create application set file: %w", err)
 		}
 	}
@@ -103,7 +122,7 @@ func (s *Service) ensureApplicationSet(res *types.ProjectWithBaseCampInfo, repoN
 	return nil
 }
 
-func (s *Service) ensureArgoCdRepo(res *types.ProjectWithBaseCampInfo, repoName string) error {
+func (s *argoCdServiceImpl) ensureArgoCdRepo(res *types.ProjectWithBaseCampInfo, repoName string) error {
 
 	checkArgoCdRepoReq := &types.CheckRepoRequest{
 		URL:   res.BaseCampURL,
@@ -112,7 +131,7 @@ func (s *Service) ensureArgoCdRepo(res *types.ProjectWithBaseCampInfo, repoName 
 		Name:  repoName,
 	}
 
-	exists, err := s.repoExists(checkArgoCdRepoReq)
+	exists, err := s.gitService.RepoExists(checkArgoCdRepoReq)
 	if err != nil {
 		return fmt.Errorf("repository check failed: %w", err)
 	}
@@ -127,7 +146,7 @@ func (s *Service) ensureArgoCdRepo(res *types.ProjectWithBaseCampInfo, repoName 
 			Token:       res.Token,
 		}
 
-		if err := s.createRepo(createReq); err != nil {
+		if err := s.gitService.CreateRepo(createReq); err != nil {
 			return fmt.Errorf("failed to create ArgoCD repository: %w", err)
 		}
 		log.Printf("Repository '%s' created successfully.", repoName)
@@ -136,48 +155,4 @@ func (s *Service) ensureArgoCdRepo(res *types.ProjectWithBaseCampInfo, repoName 
 	}
 
 	return nil
-}
-
-func (s *Service) repoExists(req *types.CheckRepoRequest) (bool, error) {
-	repoURL := fmt.Sprintf("%s/api/v1/repos/%s/%s", req.URL, req.Owner, req.Name)
-	_, err := s.DoJSONGet(repoURL, req.Token)
-	if err != nil {
-		return false, nil
-	}
-	return true, nil
-}
-
-func (s *Service) createRepo(req *types.CreateRepoRequest) error {
-	repoURL := fmt.Sprintf("%s/api/v1/user/repos", req.URL)
-	payload := map[string]interface{}{
-		"Description": req.Description,
-		"Name":        req.Name,
-		"Private":     req.Private,
-	}
-	_, err := s.DoJSONPost(repoURL, req.Token, payload)
-	return err
-}
-
-func (s *Service) fileExists(req *types.CheckFileRequest) (bool, error) {
-	repoURL := fmt.Sprintf("%s/api/v1/repos/%s/%s/contents/%s", req.URL, req.Owner, req.Repo, req.FilePath)
-	_, err := s.DoJSONGet(repoURL, req.Token)
-	if err != nil {
-		return false, nil
-	}
-	return true, nil
-}
-
-func (s *Service) createFile(req *types.CreateFileRequest) error {
-	repoURL := fmt.Sprintf("%s/api/v1/repos/%s/%s/contents/%s", req.URL, req.Owner, req.Repo, req.FilePath)
-
-	payload := map[string]interface{}{
-		"Author":    req.Details.Author,
-		"Branch":    req.Details.Branch,
-		"NewBranch": req.Details.NewBranch,
-		"Content":   req.Details.Content,
-		"Message":   req.Details.Message,
-	}
-
-	_, err := s.DoJSONPost(repoURL, req.Token, payload)
-	return err
 }

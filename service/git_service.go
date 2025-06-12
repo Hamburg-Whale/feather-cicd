@@ -2,15 +2,38 @@ package service
 
 import (
 	"encoding/json"
+	"feather/repository"
 	"feather/types"
 	"fmt"
 	"log"
 )
 
-func (s *Service) CreateRepo(req *types.RepoFromTemplateRequest) (*types.Response, error) {
+type GitService interface {
+	CreateRepoBasedTemplate(req *types.RepoFromTemplateRequest) (*types.Response, error)
+
+	RepoExists(req *types.CheckRepoRequest) (bool, error)
+	CreateRepo(req *types.CreateRepoRequest) error
+
+	FileExists(req *types.CheckFileRequest) (bool, error)
+	CreateFile(req *types.CreateFileRequest) error
+}
+
+type gitServiceImpl struct {
+	httpClient *HTTPClient
+	repository *repository.Repository
+}
+
+func NewGitService(repository *repository.Repository) GitService {
+	return &gitServiceImpl{
+		httpClient: NewHTTPClient(),
+		repository: repository,
+	}
+}
+
+func (s *gitServiceImpl) CreateRepoBasedTemplate(req *types.RepoFromTemplateRequest) (*types.Response, error) {
 	repoURL := fmt.Sprintf("%s/api/v1/repos/%s/%s/generate", req.URL, req.Template.Owner, req.Template.Repo)
 
-	token, err := s.repository.TokenByBaseCampId(req.BaseCampId)
+	token, err := s.repository.TokenByBasecampId(req.BaseCampId)
 	if err != nil {
 		return nil, fmt.Errorf("get token by basecampId failed: %w", err)
 	}
@@ -30,7 +53,7 @@ func (s *Service) CreateRepo(req *types.RepoFromTemplateRequest) (*types.Respons
 		"webhooks":         req.Options.Webhooks,
 	}
 
-	res, err := s.DoJSONPost(repoURL, token, payload)
+	res, err := s.httpClient.JSONPost(repoURL, token, payload)
 	if err != nil {
 		return nil, fmt.Errorf("repository creation failed: %w", err)
 	}
@@ -51,7 +74,7 @@ func (s *Service) CreateRepo(req *types.RepoFromTemplateRequest) (*types.Respons
 	return &result, nil
 }
 
-func (s *Service) attachWebhook(req *types.RepoFromTemplateRequest) error {
+func (s *gitServiceImpl) attachWebhook(req *types.RepoFromTemplateRequest) error {
 	hookURL := fmt.Sprintf("%s/api/v1/repos/%s/%s/hooks", req.URL, req.Owner, req.Name)
 
 	hookType := req.Webhook.Type
@@ -59,7 +82,7 @@ func (s *Service) attachWebhook(req *types.RepoFromTemplateRequest) error {
 		hookType = "gitea"
 	}
 
-	token, err := s.repository.TokenByBaseCampId(req.BaseCampId)
+	token, err := s.repository.TokenByBasecampId(req.BaseCampId)
 	if err != nil {
 		return fmt.Errorf("get token by basecampId failed: %w", err)
 	}
@@ -75,9 +98,53 @@ func (s *Service) attachWebhook(req *types.RepoFromTemplateRequest) error {
 		"active":        true,
 	}
 
-	if _, err := s.DoJSONPost(hookURL, token, payload); err != nil {
+	if _, err := s.httpClient.JSONPost(hookURL, token, payload); err != nil {
 		return fmt.Errorf("webhook creation failed: %w", err)
 	}
 	log.Printf("Webhook created for: %s/%s", req.Owner, req.Name)
 	return nil
+}
+
+func (s *gitServiceImpl) RepoExists(req *types.CheckRepoRequest) (bool, error) {
+	repoURL := fmt.Sprintf("%s/api/v1/repos/%s/%s", req.URL, req.Owner, req.Name)
+	_, err := s.httpClient.JSONGet(repoURL, req.Token)
+	if err != nil {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (s *gitServiceImpl) CreateRepo(req *types.CreateRepoRequest) error {
+	repoURL := fmt.Sprintf("%s/api/v1/user/repos", req.URL)
+	payload := map[string]interface{}{
+		"Description": req.Description,
+		"Name":        req.Name,
+		"Private":     req.Private,
+	}
+	_, err := s.httpClient.JSONPost(repoURL, req.Token, payload)
+	return err
+}
+
+func (s *gitServiceImpl) FileExists(req *types.CheckFileRequest) (bool, error) {
+	repoURL := fmt.Sprintf("%s/api/v1/repos/%s/%s/contents/%s", req.URL, req.Owner, req.Repo, req.FilePath)
+	_, err := s.httpClient.JSONGet(repoURL, req.Token)
+	if err != nil {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (s *gitServiceImpl) CreateFile(req *types.CreateFileRequest) error {
+	repoURL := fmt.Sprintf("%s/api/v1/repos/%s/%s/contents/%s", req.URL, req.Owner, req.Repo, req.FilePath)
+
+	payload := map[string]interface{}{
+		"Author":    req.Details.Author,
+		"Branch":    req.Details.Branch,
+		"NewBranch": req.Details.NewBranch,
+		"Content":   req.Details.Content,
+		"Message":   req.Details.Message,
+	}
+
+	_, err := s.httpClient.JSONPost(repoURL, req.Token, payload)
+	return err
 }

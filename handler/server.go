@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"feather/service"
 	"log"
 
 	"github.com/gin-contrib/cors"
@@ -9,29 +8,26 @@ import (
 )
 
 type Server struct {
-	engine  *gin.Engine
-	service *service.Service
-	port    string
-	ip      string
+	Engine *gin.Engine
+	port   string
+	ip     string
 }
 
-func NewServer(service *service.Service, port string) *Server {
-	s := &Server{engine: gin.New(), service: service, port: port}
-	s.engine.Use(gin.Logger())
-	s.engine.Use(gin.Recovery())
-	s.engine.Use(cors.New(cors.Config{
+func NewServer(port string) *Server {
+	s := &Server{Engine: gin.New(), port: port}
+	s.Engine.Use(gin.Logger())
+	s.Engine.Use(gin.Recovery())
+	s.Engine.Use(cors.New(cors.Config{
 		AllowWebSockets:  true,
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
 		AllowHeaders:     []string{"*"},
 		AllowCredentials: true,
 	}))
-
-	registerServer(s)
 	return s
 }
 
 func (s *Server) StartServer() error {
 	log.Println("Go Server Starting...")
-	return s.engine.Run(s.port)
+	return s.Engine.Run(s.port)
 }

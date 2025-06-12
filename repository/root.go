@@ -54,16 +54,16 @@ func (r *Repository) User(userId int64) (*types.User, error) {
 	return u, nil
 }
 
-func (r *Repository) CreateBaseCamp(name string, url string, token string, owner string, userId int64) error {
+func (r *Repository) CreateBasecamp(name string, url string, token string, owner string, userId int64) error {
 	if _, err := r.db.Exec("INSERT INTO feather.basecamp(name, url, token, owner, user_id) VALUES(?, ?, ?, ?, ?)",
 		name, url, token, owner, userId); err != nil {
 		return err
 	}
-	log.Println("CreateBaseCamp Query run successfully!")
+	log.Println("CreateBasecamp Query run successfully!")
 	return nil
 }
 
-func (r *Repository) TokenByBaseCampId(baseCampId int64) (string, error) {
+func (r *Repository) TokenByBasecampId(baseCampId int64) (string, error) {
 	var token string
 	qs := query([]string{"SELECT * FROM", basecamps, "WHERE id = ?"})
 
@@ -73,11 +73,11 @@ func (r *Repository) TokenByBaseCampId(baseCampId int64) (string, error) {
 		}
 	}
 
-	log.Println("TokenByBaseCampId Query run successfully!")
+	log.Println("TokenByBasecampId Query run successfully!")
 	return token, nil
 }
 
-func (r *Repository) BaseCampsByUserId(userId int64) ([]*types.BaseCamp, error) {
+func (r *Repository) BasecampsByUserId(userId int64) ([]*types.Basecamp, error) {
 	qs := query([]string{"SELECT id, name, url, token, user_id FROM", basecamps, "WHERE user_id = ?"})
 	rows, err := r.db.Query(qs, userId)
 	if err != nil {
@@ -85,10 +85,10 @@ func (r *Repository) BaseCampsByUserId(userId int64) ([]*types.BaseCamp, error) 
 	}
 	defer rows.Close()
 
-	var baseCamps []*types.BaseCamp
+	var baseCamps []*types.Basecamp
 
 	for rows.Next() {
-		b := new(types.BaseCamp)
+		b := new(types.Basecamp)
 		if err := rows.Scan(&b.ID, &b.Name, &b.URL, &b.Owner, &b.Token, &b.User_ID); err != nil {
 			return nil, fmt.Errorf("row scan failed: %w", err)
 		}
@@ -103,8 +103,8 @@ func (r *Repository) BaseCampsByUserId(userId int64) ([]*types.BaseCamp, error) 
 	return baseCamps, nil
 }
 
-func (r *Repository) BaseCamp(baseCampId int64) (*types.BaseCamp, error) {
-	b := new(types.BaseCamp)
+func (r *Repository) Basecamp(baseCampId int64) (*types.Basecamp, error) {
+	b := new(types.Basecamp)
 	qs := query([]string{"SELECT * FROM", basecamps, "WHERE id = ?"})
 
 	if err := r.db.QueryRow(qs, baseCampId).Scan(&b.ID, &b.Name, &b.URL, &b.Owner, &b.Token, &b.User_ID); err != nil {
@@ -138,7 +138,7 @@ func (r *Repository) ProjectsByBaseCampId(baseCampId int64) ([]*types.Project, e
 
 	for rows.Next() {
 		p := new(types.Project)
-		if err := rows.Scan(&p.ID, &p.Name, &p.URL, &p.Owner, &p.Private, &p.BaseCamp_ID); err != nil {
+		if err := rows.Scan(&p.ID, &p.Name, &p.URL, &p.Owner, &p.Private, &p.Basecamp_ID); err != nil {
 			return nil, fmt.Errorf("row scan failed: %w", err)
 		}
 		projects = append(projects, p)
@@ -156,7 +156,7 @@ func (r *Repository) Project(projectId int64) (*types.Project, error) {
 	p := new(types.Project)
 	qs := query([]string{"SELECT * FROM", projects, "WHERE id = ?"})
 
-	if err := r.db.QueryRow(qs, projectId).Scan(&p.ID, &p.Name, &p.URL, &p.Owner, &p.Private, &p.BaseCamp_ID); err != nil {
+	if err := r.db.QueryRow(qs, projectId).Scan(&p.ID, &p.Name, &p.URL, &p.Owner, &p.Private, &p.Basecamp_ID); err != nil {
 		if err := noResult(err); err != nil {
 			return nil, err
 		}
