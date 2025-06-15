@@ -3,7 +3,7 @@ FROM golang:1.24.3-alpine AS builder
 WORKDIR /feather
 
 COPY go.mod go.sum ./
-RUN go mod download
+RUN go mod tidy && go mod download
 
 COPY . .
 

@@ -156,3 +156,7 @@ type CheckFileRequest struct {
 	Repo     string `json:"repo" binding:"required"`
 	FilePath string `json:"file_path" binding:"required"`
 }
+
+type CreateCdRequest struct {
+	ProjectId int64 `json:"project_id" binding:"required"`
+}
