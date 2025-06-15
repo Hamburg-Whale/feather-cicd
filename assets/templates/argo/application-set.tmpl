@@ -5,30 +5,30 @@ metadata:
   namespace: argocd
 spec:
   generators:
-  - git:
-      repoURL: {{.URL}}
-      revision: HEAD
-      directories:
-      - path: '*'             
-      - path: 'application-sets'
-        exclude: true   
+    - git:
+        repoURL: {{.URL}}
+        revision: HEAD
+        directories:
+          - path: '*'             
+          - path: 'application-sets'
+            exclude: true   
   template:
     metadata:
-      name: '{{path.basename}}-app' 
+      name: '{{`{{path.basename}}`}}-app'
       labels:
         app.kubernetes.io/managed-by: feather
     spec:
       project: default
       source:
-        repoURL: '{{repoURL}}'         
-        targetRevision: '{{revision}}'  
-        path: '{{path}}/manifest.yaml'   
+        repoURL: '{{`{{repoURL}}`}}'
+        targetRevision: '{{`{{revision}}`}}'
+        path: '{{`{{path}}`}}/manifest.yaml'
       destination:
-        server: https://kubernetes.default.svc 
-        namespace: '{{path.basename}}' 
+        server: https://kubernetes.default.svc
+        namespace: '{{`{{path.basename}}`}}'
       syncPolicy:
         automated:
-          prune: true   
-          selfHeal: true 
+          prune: true
+          selfHeal: true
         syncOptions:
-        - CreateNamespace=true
+          - CreateNamespace=true
