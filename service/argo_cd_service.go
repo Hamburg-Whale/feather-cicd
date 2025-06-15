@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"encoding/base64"
 	"feather/repository"
 	"feather/types"
 	"fmt"
@@ -94,6 +95,7 @@ func (s *argoCdServiceImpl) ensureApplicationSet(res *types.ProjectWithBaseCampI
 		}
 
 		generatedYAML := buf.String()
+		encodedYaml := base64.StdEncoding.EncodeToString([]byte(generatedYAML))
 
 		author := &types.Author{
 			Email: "feather@feather.com",
@@ -102,7 +104,7 @@ func (s *argoCdServiceImpl) ensureApplicationSet(res *types.ProjectWithBaseCampI
 
 		fileCommitDetails := &types.FileCommitDetails{
 			Author:  *author,
-			Content: generatedYAML,
+			Content: encodedYaml,
 			Message: "Create Application Set YAML",
 		}
 
