@@ -177,7 +177,7 @@ func (r *Repository) ProjectWithBaseCampInfo(projectId int64) (*types.ProjectWit
 		"b.name AS basecamp_name",    // BaseCamp Name
 		"b.url AS basecamp_url,",     // BaseCamp URL
 		"b.owner AS basecamp_owner,", // BaseCamp Owner
-		"b.token AS token,",          // Token
+		"b.token AS token",           // Token
 		"FROM", projects, "p",        // Alias 'projects' table as 'p'
 		"JOIN", basecamps, "b", // Alias 'base_camps' table as 'b'
 		"ON p.basecamp_id = b.id", // JOIN condition
