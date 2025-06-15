@@ -70,8 +70,9 @@ func (s *argoCdServiceImpl) ensureApplicationSet(res *types.ProjectWithBaseCampI
 	if err != nil {
 		return fmt.Errorf("file check failed: %w", err)
 	}
+	log.Print("File Check Complete \n")
 
-	if !exists {
+	if exists {
 		applicationSetName := fmt.Sprintf("%s-appset", res.BaseCampName)
 		applicationSetURL := fmt.Sprintf("%s/%s.git", res.BaseCampURL, repoName)
 		params := struct {
