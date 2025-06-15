@@ -19,7 +19,9 @@ func NewCdHandler(as service.ArgoCdService) *CdHandler {
 func (h *CdHandler) CreateArgoCd(ctx *gin.Context) {
 	var req *types.CreateCdRequest
 
-	if err := h.argoCdService.CreateProjectManifestRepo(req.ProjectId); err != nil {
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response(ctx, http.StatusUnprocessableEntity, err.Error())
+	} else if err := h.argoCdService.CreateProjectManifestRepo(req.ProjectId); err != nil {
 		response(ctx, http.StatusInternalServerError, err.Error())
 	} else {
 		response(ctx, http.StatusOK, "Success")
