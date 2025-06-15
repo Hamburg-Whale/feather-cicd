@@ -1,12 +1,12 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: .{{ApplicationSetName}}
+  name: {{.ApplicationSetName}}
   namespace: argocd
 spec:
   generators:
   - git:
-      repoURL: .{{URL}}
+      repoURL: {{.URL}}
       revision: HEAD
       directories:
       - path: '*'             
