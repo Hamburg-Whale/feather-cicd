@@ -174,7 +174,7 @@ func (r *Repository) ProjectWithBaseCampInfo(projectId int64) (*types.ProjectWit
 		"p.name AS project_name,",    // Project Name
 		"p.url AS project_url,",      // Project URL
 		"p.owner AS project_owner,",  // Project Owner
-		"b.name AS basecamp_name",    // BaseCamp Name
+		"b.name AS basecamp_name,",   // BaseCamp Name
 		"b.url AS basecamp_url,",     // BaseCamp URL
 		"b.owner AS basecamp_owner,", // BaseCamp Owner
 		"b.token AS token",           // Token
@@ -188,6 +188,7 @@ func (r *Repository) ProjectWithBaseCampInfo(projectId int64) (*types.ProjectWit
 		&pb.ProjectName,
 		&pb.ProjectURL,
 		&pb.ProjectOwner,
+		&pb.BaseCampName,
 		&pb.BaseCampURL,
 		&pb.BaseCampOwner,
 		&pb.Token,
