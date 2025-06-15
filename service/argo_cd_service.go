@@ -58,8 +58,18 @@ func (s *argoCdServiceImpl) CreateProjectManifestRepo(projectId int64) error {
 	return nil
 }
 
+func (s *argoCdServiceImpl) createProjectManifest(res *types.ProjectWithBaseCampInfo, repoName string) {
+	checkProjectDirReq := &types.CheckFileRequest{
+		URL:      res.BaseCampURL,
+		Token:    res.Token,
+		Owner:    res.BaseCampOwner,
+		Repo:     repoName,
+		FilePath: filePath,
+	}
+}
+
 func (s *argoCdServiceImpl) ensureApplicationSet(res *types.ProjectWithBaseCampInfo, repoName string, filePath string) error {
-	checkApplicationSetRepoReq := &types.CheckFileRequest{
+	checkApplicationSetDirReq := &types.CheckFileRequest{
 		URL:      res.BaseCampURL,
 		Token:    res.Token,
 		Owner:    res.BaseCampOwner,
@@ -67,7 +77,7 @@ func (s *argoCdServiceImpl) ensureApplicationSet(res *types.ProjectWithBaseCampI
 		FilePath: filePath,
 	}
 
-	exists, err := s.gitService.FileExists(checkApplicationSetRepoReq)
+	exists, err := s.gitService.FileExists(checkApplicationSetDirReq)
 	if err != nil {
 		return fmt.Errorf("file check failed: %w", err)
 	}
