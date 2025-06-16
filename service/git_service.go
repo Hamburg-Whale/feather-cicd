@@ -6,6 +6,7 @@ import (
 	"feather/types"
 	"fmt"
 	"log"
+	"strings"
 )
 
 type GitService interface {
@@ -128,10 +129,19 @@ func (s *gitServiceImpl) CreateRepo(req *types.CreateRepoRequest) error {
 func (s *gitServiceImpl) FileExists(req *types.CheckFileRequest) (bool, error) {
 	repoURL := fmt.Sprintf("%s/api/v1/repos/%s/%s/contents/%s", req.URL, req.Owner, req.Repo, req.FilePath)
 	_, err := s.httpClient.JSONGet(repoURL, req.Token)
+
 	if err != nil {
-		return false, nil
+		if isNotFoundError(err) {
+			return false, nil
+		}
+		return false, err
 	}
+
 	return true, nil
+}
+
+func isNotFoundError(err error) bool {
+	return strings.Contains(err.Error(), "404") || strings.Contains(err.Error(), "not found")
 }
 
 func (s *gitServiceImpl) CreateFile(req *types.CreateFileRequest) error {

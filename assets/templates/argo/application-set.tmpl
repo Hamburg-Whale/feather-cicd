@@ -24,7 +24,7 @@ spec:
         targetRevision: '{{`{{revision}}`}}'
         path: '{{`{{path}}`}}/manifest.yaml'
       destination:
-        server: https://kubernetes.default.svc
+        server: {{.ClusterURL}}
         namespace: '{{`{{path.basename}}`}}'
       syncPolicy:
         automated:

@@ -1,8 +1,8 @@
 package main
 
 import (
+	"feather/cmd"
 	"feather/config"
-	"feather/handler"
 	"feather/repository"
 	"feather/router"
 	"feather/service"
@@ -23,7 +23,7 @@ func main() {
 	}
 
 	s := service.NewService(r)
-	app := handler.NewServer(*port)
+	app := cmd.NewServer(*port)
 	router.RegisterRouter(app.Engine, s)
 
 	if err := app.StartServer(); err != nil {

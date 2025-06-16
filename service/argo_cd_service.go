@@ -35,7 +35,6 @@ func (s *argoCdServiceImpl) CreateProjectManifestRepo(projectId int64) error {
 		repoName         = "feather-argocd"
 		appSetFolderPath = "application-sets"
 		appSetFileName   = "application-set.yaml"
-		manifestFileName = "manifest.yaml"
 	)
 
 	applicationSetFilePath := fmt.Sprintf("%s/%s", appSetFolderPath, appSetFileName)
@@ -58,13 +57,27 @@ func (s *argoCdServiceImpl) CreateProjectManifestRepo(projectId int64) error {
 	return nil
 }
 
-func (s *argoCdServiceImpl) createProjectManifest(res *types.ProjectWithBaseCampInfo, repoName string) {
-	checkProjectDirReq := &types.CheckFileRequest{
+func (s *argoCdServiceImpl) ensureProjectManifest(res *types.ProjectWithBaseCampInfo, repoName string) error {
+	const manifestFileName = "manifest.yaml"
+	filePath := fmt.Sprintf("%s/%s/%s", repoName, res.ProjectName, manifestFileName)
+
+	checkProjectManifestReq := &types.CheckFileRequest{
 		URL:      res.BaseCampURL,
 		Token:    res.Token,
 		Owner:    res.BaseCampOwner,
 		Repo:     repoName,
 		FilePath: filePath,
+	}
+
+	exists, err := s.gitService.FileExists(checkProjectManifestReq)
+	if err != nil {
+		return fmt.Errorf("file check failed: %w", err)
+	}
+	log.Print("File Check Complete \n")
+
+	if exists {
+		log.Printf("Project Manifest already exists at %s", filePath)
+		return nil
 	}
 }
 
@@ -84,52 +97,55 @@ func (s *argoCdServiceImpl) ensureApplicationSet(res *types.ProjectWithBaseCampI
 	log.Print("File Check Complete \n")
 
 	if exists {
-		applicationSetName := fmt.Sprintf("%s-appset", res.BaseCampName)
-		applicationSetURL := fmt.Sprintf("%s/%s.git", res.BaseCampURL, repoName)
-		params := struct {
-			ApplicationSetName string
-			URL                string
-		}{
-			ApplicationSetName: applicationSetName,
-			URL:                applicationSetURL,
-		}
+		log.Printf("ApplicationSet file already exists at %s", filePath)
+		return nil
+	}
 
-		tmpl, err := template.New("application-set.tmpl").Funcs(sprig.TxtFuncMap()).ParseFiles("assets/templates/argo/application-set.tmpl")
-		if err != nil {
-			return err
-		}
+	applicationSetName := fmt.Sprintf("%s-appset", res.BaseCampName)
+	applicationSetURL := fmt.Sprintf("%s/%s.git", res.BaseCampURL, repoName)
+	params := struct {
+		ApplicationSetName string
+		URL                string
+	}{
+		ApplicationSetName: applicationSetName,
+		URL:                applicationSetURL,
+	}
 
-		var buf bytes.Buffer
-		if err := tmpl.Execute(&buf, params); err != nil {
-			return fmt.Errorf("failed to execute application-set template: %w", err)
-		}
+	tmpl, err := template.New("application-set.tmpl").Funcs(sprig.TxtFuncMap()).ParseFiles("assets/templates/argo/application-set.tmpl")
+	if err != nil {
+		return err
+	}
 
-		generatedYAML := buf.String()
-		encodedYaml := base64.StdEncoding.EncodeToString([]byte(generatedYAML))
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, params); err != nil {
+		return fmt.Errorf("failed to execute application-set template: %w", err)
+	}
 
-		author := &types.Author{
-			Email: "feather@feather.com",
-			Name:  "feather",
-		}
+	generatedYAML := buf.String()
+	encodedYaml := base64.StdEncoding.EncodeToString([]byte(generatedYAML))
 
-		fileCommitDetails := &types.FileCommitDetails{
-			Author:  *author,
-			Content: encodedYaml,
-			Message: "Create Application Set YAML",
-		}
+	author := &types.Author{
+		Email: "feather@feather.com",
+		Name:  "feather",
+	}
 
-		createReq := &types.CreateFileRequest{
-			URL:      res.BaseCampURL,
-			Token:    res.Token,
-			Owner:    res.BaseCampOwner,
-			Repo:     repoName,
-			FilePath: filePath,
-			Details:  *fileCommitDetails,
-		}
+	fileCommitDetails := &types.FileCommitDetails{
+		Author:  *author,
+		Content: encodedYaml,
+		Message: "Create Application Set YAML",
+	}
 
-		if err := s.gitService.CreateFile(createReq); err != nil {
-			return fmt.Errorf("failed to create application set file: %w", err)
-		}
+	createReq := &types.CreateFileRequest{
+		URL:      res.BaseCampURL,
+		Token:    res.Token,
+		Owner:    res.BaseCampOwner,
+		Repo:     repoName,
+		FilePath: filePath,
+		Details:  *fileCommitDetails,
+	}
+
+	if err := s.gitService.CreateFile(createReq); err != nil {
+		return fmt.Errorf("failed to create application set file: %w", err)
 	}
 
 	return nil
