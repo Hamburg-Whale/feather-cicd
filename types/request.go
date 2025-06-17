@@ -158,5 +158,37 @@ type CheckFileRequest struct {
 }
 
 type CreateCdRequest struct {
-	ProjectId int64 `json:"project_id" binding:"required"`
+	ProjectId        int64            `json:"project_id" binding:"required"`
+	CdTemplateConfig CdTemplateConfig `json:"cd_template_config" binding:"required"`
+}
+
+type CdTemplateConfig struct {
+	AppName         string          `json:"app_name" binding:"required"`
+	Namespace       string          `json:"namespace" binding:"required"`
+	ReplicaCount    uint32          `json:"replica_count" binding:"required"`
+	ImageRegistry   string          `json:"image_registry" binding:"required"`
+	ImageName       string          `json:"image_name" binding:"required"`
+	ImageTag        string          `json:"image_tag" binding:"required"`
+	ContainerPort   uint32          `json:"container_port" binding:"required"`
+	SecurityContext SecurityContext `json:"security_context" binding:"required"`
+	ResourceConfig  ResourceConfig  `json:"resource_config" binding:"required"`
+	ServiceConfig   ServiceConfig   `json:"service_config" binding:"required"`
+}
+
+type SecurityContext struct {
+	RunAsUser uint32 `json:"run_as_user" binding:"required"`
+	FsGroup   uint32 `json:"fs_group" binding:"required"`
+}
+
+type ResourceConfig struct {
+	LimitsCPU      string `json:"limits_cpu,omitempty"`
+	LimitsMemory   string `json:"limits_memory,omitempty"`
+	RequestsCPU    string `json:"requests_cpu,omitempty"`
+	RequestsMemory string `json:"requests_memory,omitempty"`
+}
+
+type ServiceConfig struct {
+	ServiceType string `json:"service_type" binding:"required"`
+	ServicePort uint32 `json:"service_port" binding:"required"`
+	TargetPort  uint32 `json:"target_port" binding:"required"`
 }

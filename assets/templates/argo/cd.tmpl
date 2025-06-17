@@ -27,9 +27,9 @@ spec:
     spec:
       serviceAccountName: {{.AppName}}-sa
       securityContext:
-        fsGroup: 1001
-        runAsNonRoot: true
-        runAsUser: 1001
+        fsGroup: {{.SecurityContext.FsGroup}}
+        runAsNonRoot: {{.SecurityContext.RunAsNonRoot}}
+        runAsUser: {{.SecurityContext.RunAsUser}}
       containers:
       - name: {{.AppName}}
         image: {{.ImageRegistry}}/{{.ImageName}}:{{.ImageTag}}
@@ -46,8 +46,8 @@ spec:
             memory: {{.ResourceConfig.RequestsMemory}}
         securityContext:
           allowPrivilegeEscalation: false
-          runAsNonRoot: true
-          runAsUser: 1001
+          runAsNonRoot: {{.SecurityContext.RunAsNonRoot}}
+          runAsUser: {{.SecurityContext.RunAsUser}}
           capabilities:
             drop:
             - ALL
@@ -71,10 +71,10 @@ metadata:
     app.kubernetes.io/name: {{.AppName}}
     app.kubernetes.io/managed-by: feather
 spec:
-  type: {{.ServiceType}}
+  type: {{.ServiceConfig.ServiceType}}
   ports:
-  - port: {{.ServicePort}}
-    targetPort: {{.TargetPort}}
+  - port: {{.ServiceConfig.ServicePort}}
+    targetPort: {{.ServiceConfig.TargetPort}}
     protocol: TCP
     name: http
   selector:

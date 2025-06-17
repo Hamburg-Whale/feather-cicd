@@ -13,7 +13,7 @@ import (
 )
 
 type ArgoCdService interface {
-	CreateProjectManifestRepo(projectId int64) error
+	CreateProjectManifestRepo(req *types.CreateCdRequest) error
 	ensureApplicationSet(res *types.ProjectWithBaseCampInfo, repoName string, filePath string) error
 	ensureArgoCdRepo(res *types.ProjectWithBaseCampInfo, repoName string) error
 }
@@ -30,7 +30,7 @@ func NewArgoCdService(repository *repository.Repository, gitService GitService) 
 	}
 }
 
-func (s *argoCdServiceImpl) CreateProjectManifestRepo(projectId int64) error {
+func (s *argoCdServiceImpl) CreateProjectManifestRepo(req *types.CreateCdRequest) error {
 	const (
 		repoName         = "feather-argocd"
 		appSetFolderPath = "application-sets"
@@ -39,7 +39,7 @@ func (s *argoCdServiceImpl) CreateProjectManifestRepo(projectId int64) error {
 
 	applicationSetFilePath := fmt.Sprintf("%s/%s", appSetFolderPath, appSetFileName)
 
-	res, err := s.repository.ProjectWithBaseCampInfo(projectId)
+	res, err := s.repository.ProjectWithBaseCampInfo(req.ProjectId)
 	if err != nil {
 		return fmt.Errorf("Get BaseCamp failed: %w", err)
 	}
@@ -54,10 +54,14 @@ func (s *argoCdServiceImpl) CreateProjectManifestRepo(projectId int64) error {
 		return err
 	}
 
+	if err := s.ensureProjectManifest(req, res, repoName); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (s *argoCdServiceImpl) ensureProjectManifest(res *types.ProjectWithBaseCampInfo, repoName string) error {
+func (s *argoCdServiceImpl) ensureProjectManifest(req *types.CreateCdRequest, res *types.ProjectWithBaseCampInfo, repoName string) error {
 	const manifestFileName = "manifest.yaml"
 	filePath := fmt.Sprintf("%s/%s/%s", repoName, res.ProjectName, manifestFileName)
 
@@ -79,6 +83,45 @@ func (s *argoCdServiceImpl) ensureProjectManifest(res *types.ProjectWithBaseCamp
 		log.Printf("Project Manifest already exists at %s", filePath)
 		return nil
 	}
+
+	tmpl, err := template.New("cd.tmpl").Funcs(sprig.TxtFuncMap()).ParseFiles("assets/templates/argo/cd.tmpl")
+	if err != nil {
+		return err
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, req.CdTemplateConfig); err != nil {
+		return fmt.Errorf("failed to execute application-set template: %w", err)
+	}
+
+	generatedYAML := buf.String()
+	encodedYaml := base64.StdEncoding.EncodeToString([]byte(generatedYAML))
+
+	author := &types.Author{
+		Email: "feather@feather.com",
+		Name:  "feather",
+	}
+
+	fileCommitDetails := &types.FileCommitDetails{
+		Author:  *author,
+		Content: encodedYaml,
+		Message: "Create Project Manifest YAML",
+	}
+
+	createReq := &types.CreateFileRequest{
+		URL:      res.BaseCampURL,
+		Token:    res.Token,
+		Owner:    res.BaseCampOwner,
+		Repo:     repoName,
+		FilePath: filePath,
+		Details:  *fileCommitDetails,
+	}
+
+	if err := s.gitService.CreateFile(createReq); err != nil {
+		return fmt.Errorf("failed to create project manifest   file: %w", err)
+	}
+
+	return nil
 }
 
 func (s *argoCdServiceImpl) ensureApplicationSet(res *types.ProjectWithBaseCampInfo, repoName string, filePath string) error {
