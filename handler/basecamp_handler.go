@@ -43,3 +43,18 @@ func (h *BasecampHandler) Basecamp(ctx *gin.Context) {
 		response(ctx, http.StatusOK, res)
 	}
 }
+
+func (h *BasecampHandler) BasecampByUserId(ctx *gin.Context) {
+	userId := ctx.Param("userId")
+	id, err := strconv.ParseInt(userId, 10, 64)
+	if err != nil {
+		response(ctx, http.StatusBadRequest, "Invalid basecamp ID")
+		return
+	}
+
+	if res, err := h.basecampService.BasecampsByUserId(id); err != nil {
+		response(ctx, http.StatusInternalServerError, err.Error())
+	} else {
+		response(ctx, http.StatusOK, res)
+	}
+}

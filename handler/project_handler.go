@@ -43,3 +43,18 @@ func (h *ProjectHandler) Project(ctx *gin.Context) {
 		response(ctx, http.StatusOK, res)
 	}
 }
+
+func (h *ProjectHandler) ProjectByBasecampId(ctx *gin.Context) {
+	basecampId := ctx.Param("basecampId")
+	id, err := strconv.ParseInt(basecampId, 10, 64)
+	if err != nil {
+		response(ctx, http.StatusBadRequest, "Invalid project ID")
+		return
+	}
+
+	if res, err := h.projectService.ProjectsByBaseCampId(id); err != nil {
+		response(ctx, http.StatusInternalServerError, err.Error())
+	} else {
+		response(ctx, http.StatusOK, res)
+	}
+}

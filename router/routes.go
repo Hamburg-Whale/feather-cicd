@@ -26,12 +26,14 @@ func RegisterRouter(engine *gin.Engine, s *service.Service) {
 		basecampGroup := apiV1.Group("/basecamps")
 		{
 			basecampGroup.GET("/:id", basecampHandler.Basecamp)
+			basecampGroup.GET("/user/:userId", basecampHandler.BasecampByUserId)
 			basecampGroup.POST("/", basecampHandler.CreateBasecamp)
 		}
 
 		projectGroup := apiV1.Group("/projects")
 		{
 			projectGroup.GET("/:id", projectHandler.Project)
+			projectGroup.GET("/basecamp/:basecampId", projectHandler.ProjectByBasecampId)
 			projectGroup.POST("/", projectHandler.CreateProject)
 		}
 
