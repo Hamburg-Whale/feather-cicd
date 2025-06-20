@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"feather/repository"
 	"feather/types"
@@ -10,6 +11,11 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
+	"sigs.k8s.io/yaml"
 )
 
 type ArgoCdService interface {
@@ -44,8 +50,6 @@ func (s *argoCdServiceImpl) CreateProjectManifestRepo(req *types.CreateCdRequest
 		return fmt.Errorf("Get BaseCamp failed: %w", err)
 	}
 
-	// projectManifestFilePath := fmt.Sprintf("%s/%s", res.ProjectName, manifestFileName)
-
 	if err := s.ensureArgoCdRepo(res, repoName); err != nil {
 		return err
 	}
@@ -62,6 +66,16 @@ func (s *argoCdServiceImpl) CreateProjectManifestRepo(req *types.CreateCdRequest
 }
 
 func (s *argoCdServiceImpl) ensureProjectManifest(req *types.CreateCdRequest, res *types.ProjectWithBaseCampInfo, repoName string) error {
+	config, err := GetKubeConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get Kubernetes config: %w", err)
+	}
+
+	client, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return fmt.Errorf("failed to create dynamic client: %w", err)
+	}
+
 	const manifestFileName = "manifest.yaml"
 	filePath := fmt.Sprintf("%s/%s/%s", repoName, res.ProjectName, manifestFileName)
 
@@ -120,6 +134,24 @@ func (s *argoCdServiceImpl) ensureProjectManifest(req *types.CreateCdRequest, re
 	if err := s.gitService.CreateFile(createReq); err != nil {
 		return fmt.Errorf("failed to create project manifest   file: %w", err)
 	}
+
+	var obj unstructured.Unstructured
+	if err := yaml.Unmarshal(buf.Bytes(), &obj); err != nil {
+		return fmt.Errorf("failed to decode sensor YAML: %w", err)
+	}
+
+	gvr := schema.GroupVersionResource{
+		Group:    "argoproj.io",
+		Version:  "v1alpha1",
+		Resource: "applicationset",
+	}
+
+	resource, err := client.Resource(gvr).Namespace(req.Namespace).Create(context.Background(), &obj, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to create applicationset resource: %w", err)
+	}
+
+	log.Printf("Application Set created: %s", resource.GetName())
 
 	return nil
 }

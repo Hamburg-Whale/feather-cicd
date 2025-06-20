@@ -159,6 +159,7 @@ type CheckFileRequest struct {
 
 type CreateCdRequest struct {
 	ProjectId        int64            `json:"project_id" binding:"required"`
+	Namespace        string           `json:"namespace" binding:"required"`
 	CdTemplateConfig CdTemplateConfig `json:"cd_template_config" binding:"required"`
 }
 
