@@ -74,6 +74,7 @@ func (s *argoSensorServiceImpl) CreateArgoSensor(req *types.JobBasedJavaRequest)
 
 	resource, err := client.Resource(gvr).Namespace(req.Namespace).Create(context.Background(), &obj, metav1.CreateOptions{})
 	if err != nil {
+		log.Println(err)
 		return fmt.Errorf("failed to create sensor resource: %w", err)
 	}
 	log.Println("=======7=======")
