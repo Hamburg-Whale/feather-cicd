@@ -34,6 +34,8 @@ func NewGitService(repository *repository.Repository) GitService {
 func (s *gitServiceImpl) CreateRepoBasedTemplate(req *types.RepoFromTemplateRequest) (*types.Response, error) {
 	repoURL := fmt.Sprintf("%s/api/v1/repos/%s/%s/generate", req.URL, req.Template.Owner, req.Template.Repo)
 
+	fmt.Println(req.URL)
+
 	token, err := s.repository.TokenByBasecampId(req.BaseCampId)
 	if err != nil {
 		return nil, fmt.Errorf("get token by basecampId failed: %w", err)
@@ -59,6 +61,8 @@ func (s *gitServiceImpl) CreateRepoBasedTemplate(req *types.RepoFromTemplateRequ
 		return nil, fmt.Errorf("repository creation failed: %w", err)
 	}
 	defer res.Body.Close()
+
+	fmt.Println("====3====")
 
 	var result types.Response
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {

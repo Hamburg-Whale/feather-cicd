@@ -3,6 +3,7 @@ package handler
 import (
 	"feather/service"
 	"feather/types"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -21,6 +22,7 @@ func (h *ProjectHandler) CreateProject(ctx *gin.Context) {
 	var req types.CreateProjectReq
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+		fmt.Println("Bind error:", err.Error())
 		response(ctx, http.StatusUnprocessableEntity, err.Error())
 	} else if err := h.projectService.CreateProject(req.Name, req.URL, req.Owner, req.Private, req.BaseCamp_ID); err != nil {
 		response(ctx, http.StatusInternalServerError, err.Error())

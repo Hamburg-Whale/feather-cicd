@@ -3,6 +3,7 @@ package handler
 import (
 	"feather/service"
 	"feather/types"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -21,7 +22,9 @@ func (h *BasecampHandler) CreateBasecamp(ctx *gin.Context) {
 	var req types.CreateBasecampReq
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+		fmt.Println("Bind error:", err.Error())
 		response(ctx, http.StatusUnprocessableEntity, err.Error())
+		return
 	} else if err := h.basecampService.CreateBasecamp(req.Name, req.URL, req.Token, req.Owner, req.User_ID); err != nil {
 		response(ctx, http.StatusInternalServerError, err.Error())
 	} else {

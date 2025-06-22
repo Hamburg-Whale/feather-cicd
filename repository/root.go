@@ -65,7 +65,7 @@ func (r *Repository) CreateBasecamp(name string, url string, token string, owner
 
 func (r *Repository) TokenByBasecampId(baseCampId int64) (string, error) {
 	var token string
-	qs := query([]string{"SELECT * FROM", basecamps, "WHERE id = ?"})
+	qs := query([]string{"SELECT token FROM", basecamps, "WHERE id = ?"})
 
 	if err := r.db.QueryRow(qs, baseCampId).Scan(&token); err != nil {
 		if err := noResult(err); err != nil {
@@ -78,7 +78,7 @@ func (r *Repository) TokenByBasecampId(baseCampId int64) (string, error) {
 }
 
 func (r *Repository) BasecampsByUserId(userId int64) ([]*types.Basecamp, error) {
-	qs := query([]string{"SELECT id, name, url, token, user_id FROM", basecamps, "WHERE user_id = ?"})
+	qs := query([]string{"SELECT id, name, url, owner, token, user_id FROM", basecamps, "WHERE user_id = ?"})
 	rows, err := r.db.Query(qs, userId)
 	if err != nil {
 		return nil, fmt.Errorf("query execution failed: %w", err)
