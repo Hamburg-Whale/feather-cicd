@@ -1,10 +1,9 @@
 package config
 
 import (
-	"os"
-
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/naoina/toml"
+	"os"
 )
 
 type Config struct {

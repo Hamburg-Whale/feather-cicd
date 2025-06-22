@@ -5,10 +5,9 @@ import (
 	"feather/config"
 	"feather/types"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"strings"
-
-	_ "github.com/go-sql-driver/mysql"
 )
 
 type Repository struct {
