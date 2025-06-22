@@ -33,41 +33,50 @@ func NewArgoSensorService(argoWorkflowService ArgoWorkflowService) ArgoSensorSer
 }
 
 func (s *argoSensorServiceImpl) CreateArgoSensor(req *types.JobBasedJavaRequest) error {
+	log.Println("=======0=======")
 	config, err := GetKubeConfig()
 	if err != nil {
 		return fmt.Errorf("failed to get Kubernetes config: %w", err)
 	}
 
+	log.Println("=======1=======")
+
 	client, err := dynamic.NewForConfig(config)
 	if err != nil {
 		return fmt.Errorf("failed to create dynamic client: %w", err)
 	}
+	log.Println("=======2=======")
 
 	workflowScript, err := s.argoWorkflowService.CreateArgoWorkflowScript(req)
 	if err != nil {
 		return fmt.Errorf("failed to generate Argo workflow script: %w", err)
 	}
+	log.Println("=======3=======")
 
 	sensorYaml, err := s.renderSensorTemplate(req, workflowScript)
 	if err != nil {
 		return fmt.Errorf("failed to render sensor template: %w", err)
 	}
+	log.Println("=======4=======")
 
 	var obj unstructured.Unstructured
 	if err := yaml.Unmarshal(sensorYaml, &obj); err != nil {
 		return fmt.Errorf("failed to decode sensor YAML: %w", err)
 	}
+	log.Println("=======5=======")
 
 	gvr := schema.GroupVersionResource{
 		Group:    "argoproj.io",
 		Version:  "v1alpha1",
 		Resource: "sensors",
 	}
+	log.Println("=======6=======")
 
 	resource, err := client.Resource(gvr).Namespace(req.Namespace).Create(context.Background(), &obj, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create sensor resource: %w", err)
 	}
+	log.Println("=======7=======")
 
 	log.Printf("Sensor created: %s", resource.GetName())
 	return nil
