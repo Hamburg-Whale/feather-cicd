@@ -29,6 +29,28 @@ func NewRes(result int, res interface{}, data ...string) *Response {
 	}
 }
 
+type GiteaFileResponse struct {
+	Name        string `json:"name"`
+	Path        string `json:"path"`
+	SHA         string `json:"sha"`
+	Size        int64  `json:"size"`
+	URL         string `json:"url"`
+	HTMLURL     string `json:"html_url"`
+	GitURL      string `json:"git_url"`
+	DownloadURL string `json:"download_url"`
+	Type        string `json:"type"`
+	Content     string `json:"content"`
+	Encoding    string `json:"encoding"`
+}
+
+type GiteaFileContentResponse struct {
+	Content  string `json:"content"`
+	Encoding string `json:"encoding"`
+	URL      string `json:"url"`
+	SHA      string `json:"sha"`
+	Size     int64  `json:"size"`
+}
+
 type GiteaUser struct {
 	Active            bool      `json:"active"`
 	AvatarURL         string    `json:"avatar_url"`

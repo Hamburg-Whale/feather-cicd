@@ -8,6 +8,7 @@ import (
 	"feather/types"
 	"fmt"
 	"log"
+	"strings"
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
@@ -20,7 +21,7 @@ import (
 
 type ArgoCdService interface {
 	CreateProjectManifestRepo(req *types.CreateCdRequest) error
-	ensureApplicationSet(res *types.ProjectWithBaseCampInfo, repoName string, filePath string) error
+	ensureApplicationSet(res *types.ProjectWithBaseCampInfo, repoName string, filePath string, namespace string) error
 	ensureArgoCdRepo(res *types.ProjectWithBaseCampInfo, repoName string) error
 }
 
@@ -50,32 +51,27 @@ func (s *argoCdServiceImpl) CreateProjectManifestRepo(req *types.CreateCdRequest
 		return fmt.Errorf("Get BaseCamp failed: %w", err)
 	}
 
+	log.Println(res.Token)
+	log.Println(res.BaseCampURL)
+	log.Println(res.ProjectURL)
+
 	if err := s.ensureArgoCdRepo(res, repoName); err != nil {
 		return err
 	}
 
-	if err := s.ensureApplicationSet(res, repoName, applicationSetFilePath); err != nil {
+	namespace, err := s.ensureProjectManifest(req, res, repoName)
+	if err != nil {
 		return err
 	}
 
-	if err := s.ensureProjectManifest(req, res, repoName); err != nil {
+	if err := s.ensureApplicationSet(res, repoName, applicationSetFilePath, namespace); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *argoCdServiceImpl) ensureProjectManifest(req *types.CreateCdRequest, res *types.ProjectWithBaseCampInfo, repoName string) error {
-	config, err := GetKubeConfig()
-	if err != nil {
-		return fmt.Errorf("failed to get Kubernetes config: %w", err)
-	}
-
-	client, err := dynamic.NewForConfig(config)
-	if err != nil {
-		return fmt.Errorf("failed to create dynamic client: %w", err)
-	}
-
+func (s *argoCdServiceImpl) ensureProjectManifest(req *types.CreateCdRequest, res *types.ProjectWithBaseCampInfo, repoName string) (string, error) {
 	const manifestFileName = "manifest.yaml"
 	filePath := fmt.Sprintf("%s/%s/%s", repoName, res.ProjectName, manifestFileName)
 
@@ -89,23 +85,24 @@ func (s *argoCdServiceImpl) ensureProjectManifest(req *types.CreateCdRequest, re
 
 	exists, err := s.gitService.FileExists(checkProjectManifestReq)
 	if err != nil {
-		return fmt.Errorf("file check failed: %w", err)
+		return "", fmt.Errorf("file check failed: %w", err)
 	}
 	log.Print("File Check Complete \n")
 
-	if exists {
-		log.Printf("Project Manifest already exists at %s", filePath)
-		return nil
+	if err != nil {
+		return "", fmt.Errorf("failed to parsing application-set template: %w", err)
 	}
 
-	tmpl, err := template.New("cd.tmpl").Funcs(sprig.TxtFuncMap()).ParseFiles("assets/templates/argo/cd.tmpl")
-	if err != nil {
-		return err
+	if exists {
+		log.Printf("Project Manifest already exists at %s", filePath)
+		return req.Namespace, nil
 	}
 
 	var buf bytes.Buffer
+	tmpl, err := template.New("cd.tmpl").Funcs(sprig.TxtFuncMap()).ParseFiles("assets/templates/argo/cd.tmpl")
+
 	if err := tmpl.Execute(&buf, req.CdTemplateConfig); err != nil {
-		return fmt.Errorf("failed to execute application-set template: %w", err)
+		return "", fmt.Errorf("failed to execute application-set template: %w", err)
 	}
 
 	generatedYAML := buf.String()
@@ -132,31 +129,23 @@ func (s *argoCdServiceImpl) ensureProjectManifest(req *types.CreateCdRequest, re
 	}
 
 	if err := s.gitService.CreateFile(createReq); err != nil {
-		return fmt.Errorf("failed to create project manifest   file: %w", err)
+		return "", fmt.Errorf("failed to create project manifest   file: %w", err)
 	}
 
-	var obj unstructured.Unstructured
-	if err := yaml.Unmarshal(buf.Bytes(), &obj); err != nil {
-		return fmt.Errorf("failed to decode sensor YAML: %w", err)
-	}
-
-	gvr := schema.GroupVersionResource{
-		Group:    "argoproj.io",
-		Version:  "v1alpha1",
-		Resource: "applicationset",
-	}
-
-	resource, err := client.Resource(gvr).Namespace(req.Namespace).Create(context.Background(), &obj, metav1.CreateOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to create applicationset resource: %w", err)
-	}
-
-	log.Printf("Application Set created: %s", resource.GetName())
-
-	return nil
+	return req.Namespace, nil
 }
 
-func (s *argoCdServiceImpl) ensureApplicationSet(res *types.ProjectWithBaseCampInfo, repoName string, filePath string) error {
+func (s *argoCdServiceImpl) ensureApplicationSet(res *types.ProjectWithBaseCampInfo, repoName string, filePath string, namespace string) error {
+	config, err := GetKubeConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get Kubernetes config: %w", err)
+	}
+
+	client, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return fmt.Errorf("failed to create dynamic client: %w", err)
+	}
+
 	checkApplicationSetDirReq := &types.CheckFileRequest{
 		URL:      res.BaseCampURL,
 		Token:    res.Token,
@@ -173,17 +162,60 @@ func (s *argoCdServiceImpl) ensureApplicationSet(res *types.ProjectWithBaseCampI
 
 	if exists {
 		log.Printf("ApplicationSet file already exists at %s", filePath)
+		baseCampNameLower := strings.ToLower(res.BaseCampName)
+		applicationSetName := fmt.Sprintf("%s-appset", baseCampNameLower)
+		applicationSetURL := fmt.Sprintf("%s/%s.git", res.BaseCampURL, repoName)
+		params := struct {
+			ApplicationSetName string
+			URL                string
+			ClusterURL         string
+		}{
+			ApplicationSetName: applicationSetName,
+			URL:                applicationSetURL,
+			ClusterURL:         config.Host,
+		}
+
+		tmpl, err := template.New("application-set.tmpl").Funcs(sprig.TxtFuncMap()).ParseFiles("assets/templates/argo/application-set.tmpl")
+		if err != nil {
+			return err
+		}
+
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, params); err != nil {
+			return fmt.Errorf("failed to execute application-set template: %w", err)
+		}
+
+		var obj unstructured.Unstructured
+		if err := yaml.Unmarshal(buf.Bytes(), &obj); err != nil {
+			return fmt.Errorf("failed to decode sensor YAML: %w", err)
+		}
+
+		gvr := schema.GroupVersionResource{
+			Group:    "argoproj.io",
+			Version:  "v1alpha1",
+			Resource: "applicationsets",
+		}
+
+		resource, err := client.Resource(gvr).Namespace(namespace).Create(context.Background(), &obj, metav1.CreateOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to create applicationset resource: %w", err)
+		}
+
+		log.Printf("Application Set created: %s", resource.GetName())
 		return nil
 	}
 
-	applicationSetName := fmt.Sprintf("%s-appset", res.BaseCampName)
+	baseCampNameLower := strings.ToLower(res.BaseCampName)
+	applicationSetName := fmt.Sprintf("%s-appset", baseCampNameLower)
 	applicationSetURL := fmt.Sprintf("%s/%s.git", res.BaseCampURL, repoName)
 	params := struct {
 		ApplicationSetName string
 		URL                string
+		ClusterURL         string
 	}{
 		ApplicationSetName: applicationSetName,
 		URL:                applicationSetURL,
+		ClusterURL:         config.Host,
 	}
 
 	tmpl, err := template.New("application-set.tmpl").Funcs(sprig.TxtFuncMap()).ParseFiles("assets/templates/argo/application-set.tmpl")
@@ -223,10 +255,30 @@ func (s *argoCdServiceImpl) ensureApplicationSet(res *types.ProjectWithBaseCampI
 		return fmt.Errorf("failed to create application set file: %w", err)
 	}
 
+	var obj unstructured.Unstructured
+	if err := yaml.Unmarshal(buf.Bytes(), &obj); err != nil {
+		return fmt.Errorf("failed to decode sensor YAML: %w", err)
+	}
+
+	gvr := schema.GroupVersionResource{
+		Group:    "argoproj.io",
+		Version:  "v1alpha1",
+		Resource: "applicationsets",
+	}
+
+	resource, err := client.Resource(gvr).Namespace(namespace).Create(context.Background(), &obj, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to create applicationset resource: %w", err)
+	}
+
+	log.Printf("Application Set created: %s", resource.GetName())
+
 	return nil
 }
 
 func (s *argoCdServiceImpl) ensureArgoCdRepo(res *types.ProjectWithBaseCampInfo, repoName string) error {
+	log.Println("=====1=====")
+	log.Println(res)
 
 	checkArgoCdRepoReq := &types.CheckRepoRequest{
 		URL:   res.BaseCampURL,
@@ -249,6 +301,10 @@ func (s *argoCdServiceImpl) ensureArgoCdRepo(res *types.ProjectWithBaseCampInfo,
 			Private:     false,
 			Token:       res.Token,
 		}
+		log.Println("=====2=====")
+		log.Println(createReq.URL)
+		log.Println(createReq.Name)
+		log.Println(createReq.Owner)
 
 		if err := s.gitService.CreateRepo(createReq); err != nil {
 			return fmt.Errorf("failed to create ArgoCD repository: %w", err)

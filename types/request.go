@@ -193,3 +193,11 @@ type ServiceConfig struct {
 	ServicePort uint32 `json:"service_port" binding:"required"`
 	TargetPort  uint32 `json:"target_port" binding:"required"`
 }
+
+type GetFileRequest struct {
+	URL      string `json:"url"`
+	Token    string `json:"token"`
+	Owner    string `json:"owner"`
+	Repo     string `json:"repo"`
+	FilePath string `json:"file_path"`
+}

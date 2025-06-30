@@ -1,3 +1,4 @@
 [db]
 database = "mysql"
-url = "${MYSQL_USER}:${MYSQL_PASSWORD}@tcp(${MYSQL_HOST}:${MYSQL_PORT})/${MYSQL_DB}?multiStatements=true&parseTime=true"
+#url = "${MYSQL_USER}:${MYSQL_PASSWORD}@tcp(${MYSQL_HOST}:${MYSQL_PORT})/${MYSQL_DB}?multiStatements=true&parseTime=true"
+url = "cheshire-cat:dltkdgksskfkdmldoffltm@tcp(192.168.0.141:30007)/feather?multiStatements=true&parseTime=true"

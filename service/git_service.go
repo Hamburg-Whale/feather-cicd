@@ -5,7 +5,10 @@ import (
 	"feather/repository"
 	"feather/types"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -17,6 +20,7 @@ type GitService interface {
 
 	FileExists(req *types.CheckFileRequest) (bool, error)
 	CreateFile(req *types.CreateFileRequest) error
+	GetFileContent(req *types.GetFileRequest) (string, error)
 }
 
 type gitServiceImpl struct {
@@ -161,4 +165,41 @@ func (s *gitServiceImpl) CreateFile(req *types.CreateFileRequest) error {
 
 	_, err := s.httpClient.JSONPost(repoURL, req.Token, payload)
 	return err
+}
+
+func (s *gitServiceImpl) GetFileContent(req *types.GetFileRequest) (string, error) {
+	// URL 경로 인코딩
+	encodedFilePath := url.PathEscape(req.FilePath)
+
+	// Gitea API URL 구성
+	// GET /repos/{owner}/{repo}/contents/{filepath}
+	apiURL := fmt.Sprintf("%s/api/v1/repos/%s/%s/contents/%s",
+		strings.TrimRight(req.URL, "/"),
+		req.Owner,
+		req.Repo,
+		encodedFilePath)
+
+	result, err := s.httpClient.JSONGet(apiURL, req.Token)
+	if err != nil {
+		return "", fmt.Errorf("failed to get file content: %w", err)
+	}
+
+	if result.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(result.Body)
+		return "", fmt.Errorf("gitea API error: status %d, body: %s", result.StatusCode, string(body))
+	}
+
+	body, err := io.ReadAll(result.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// JSON 응답 파싱
+	var fileResponse *types.GiteaFileResponse
+	if err := json.Unmarshal(body, &fileResponse); err != nil {
+		return "", fmt.Errorf("failed to parse JSON response: %w", err)
+	}
+
+	// 파일 내용 반환 (Gitea는 base64로 인코딩된 내용을 반환)
+	return fileResponse.Content, nil
 }
